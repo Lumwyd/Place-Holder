@@ -1,0 +1,20 @@
+
+Game Mechanics
+    Implement Moving Platforms
+    Allow placement of allowed objects
+    Add Stars
+    change level when landing on finish platform
+
+GUI
+    Show Allowed Objects
+
+Levels
+    Make more levels
+
+Art
+    Texture Player
+    Animate Player
+    Texture start Platform
+    Texture moving platform
+    Texture end platform
+    Texture spikes

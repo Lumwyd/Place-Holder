@@ -163,6 +163,22 @@ def load(save):
        level = data[1]
     except IndexError:
         pass
+    
+def load_level(save):
+    global platforms
+    global powerups
+    global player
+    global allowed_objects
+    
+    data = pickle.load(save)
+    
+    try:
+       platforms = data[0]
+       powerups = data[1]
+       player = data[2]
+       allowed_objects = data[3]
+    except IndexError:
+        pass
         
 def menu(saveable = False):
     global cont
@@ -711,6 +727,7 @@ class Player:
         self.on_ground = False
         self.cayote_timer = 0
         self.crouched = False
+        self.dead = False
         self.id = -1
         
     def draw(self):
@@ -785,6 +802,9 @@ class Player:
                             self.speed[1] = 0
                         else:
                             self.location[1] += (entity.height/2 + self.height/2 + 1) - abs(y_diff)
+                    
+                    if entity.type == 2:
+                        self.dead = True
                             
                 elif isinstance(entity, PowerUp):
                     if entity.type == 0:
@@ -802,6 +822,11 @@ class Player:
             self.jump_allowed = True
         else:
             self.jump_allowed = False
+            
+        if self.dead:
+            
+            self.height = 30
+            self.width = 55
  
 class PowerUp:
     def __init__(self, location, type):
@@ -814,24 +839,46 @@ class PowerUp:
         
     def draw(self):
         pg.draw.rect(screen.get_surface(), (255, 200, 200), (self.location, (self.width, self.height)))
-        
+       
+global level
+global stars
+
+level = 1
+stars = {}
+
+global platforms
+global powerups
+global player
+global allowed_objects
+
+platforms = []
+powerups = []
+player = Player([400, 350])
+ 
 def main():
-    start_platform = Platform([300, 400], 200, 50)
-    platform_1 = Platform([100, 400], 200, 50)
-    end_platform = Platform([500, 400], 200, 50)
-    jump_power = PowerUp([550, 300], 1)
-    dash_power = PowerUp([200, 300], 1)
-    platforms = [start_platform, platform_1, end_platform]
-    global powerups
-    powerups = [jump_power, dash_power]
     
-    player = Player([400, 350])
+    global platforms
+    global powerups
+    global player
+    global allowed_objects
+    
+    save = open("levels\\level-"+str(level)+".lvl", "rb")
+    load_level(save)
+    
+    player = player[0]
+    
+    global cont
+    cont = True
+    
     held_keys = {}
     frame = 0
     previous_time = 0
     current_time = time.time()
     d_time = 0.18
     direction = [0, 0]
+    
+    
+    
     while True:
         direction = [0, 0]
         frame += 1
@@ -839,120 +886,132 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 quit()
-        try:
-            if pg.key.get_pressed()[key_bindings["left"]]:
-                direction[0] -=1
-                try:
-                    if held_keys[key_bindings["left"]] == frame - 1:
-                        player.speed[0] *= 1.0001
-                    else:
+        if player.dead == False:
+            try:
+                if pg.key.get_pressed()[key_bindings["left"]]:
+                    direction[0] -=1
+                    try:
+                        if held_keys[key_bindings["left"]] == frame - 1:
+                            player.speed[0] *= 1.0001
+                        else:
+                            player.speed[0] = -3*d_time*60
+                            
+                    except KeyError:
                         player.speed[0] = -3*d_time*60
-                        
-                except KeyError:
-                    player.speed[0] = -3*d_time*60
-                
-                held_keys[key_bindings["left"]] = frame
-        except:
-            if pg.mouse.get_pressed()[int(key_bindings["left"][-1])]:
-                direction[0] -=1
-                try:
-                    if held_keys[key_bindings["left"]] == frame - 1:
-                        player.speed[0] *= 1.0001
-                    else:
+                    
+                    held_keys[key_bindings["left"]] = frame
+            except:
+                if pg.mouse.get_pressed()[int(key_bindings["left"][-1])]:
+                    direction[0] -=1
+                    try:
+                        if held_keys[key_bindings["left"]] == frame - 1:
+                            player.speed[0] *= 1.0001
+                        else:
+                            player.speed[0] = -3*d_time*60
+                            
+                    except KeyError:
                         player.speed[0] = -3*d_time*60
-                        
-                except KeyError:
-                    player.speed[0] = -3*d_time*60
-                
-                held_keys[key_bindings["left"]] = frame
-                
-                
-        
-        try:    
-            if pg.key.get_pressed()[key_bindings["right"]]:
-                direction[0] += 1
-                try:
-                    if held_keys[key_bindings["right"]] == frame - 1:
-                        player.speed[0] *= 1.0001
-                    else:
-                        player.speed[0] = 3*d_time*60
-                        
-                except KeyError:
-                    player.speed[0] = 3*d_time*60
-                
-                held_keys[key_bindings["right"]] = frame
-        except:
-            if pg.mouse.get_pressed()[int(key_bindings["right"][-1])]:
-                direction[0] += 1
-                try:
-                    if held_keys[key_bindings["right"]] == frame - 1:
-                        player.speed[0] *= 1.0001
-                    else:
-                        player.speed[0] = 3*d_time*60
-                        
-                except KeyError:
-                    player.speed[0] = 3*d_time*60
-                
-                held_keys[key_bindings["right"]] = frame
-        if direction[0] == 0:
-            player.speed[0] = 0
-        
-        try:
+                    
+                    held_keys[key_bindings["left"]] = frame
+                                        
             
-            if pg.key.get_pressed()[key_bindings["jump"]]:
-                direction[1] -= 1
-                if player.jump_enabled and player.jump_allowed:
-                    player.speed[1] -= 4*d_time*60
-                    player.jump_allowed = False
-                    player.on_ground = False
-                    player.cayote_timer = 0
-        except:
-            if pg.mouse.get_pressed()[int(key_bindings["jump"][-1])]:
-                direction[1] -= 1
-                if player.jump_enabled and player.jump_allowed:
-                    player.speed[1] -= 4*d_time*60
-                    player.jump_allowed = False
-                    player.on_ground = False
-                    player.cayote_timer = 0
-        try:
-             
-            if pg.key.get_pressed()[key_bindings["crouch"]]:
-                direction[1] += 1
-                player.crouched = True
-            else:
-                player.crouched = False
-        
-        except:
-            if pg.mouse.get_pressed()[int(key_bindings["crouch"][-1])]:
-                direction[1] += 1
-                player.crouched = True
-            else:
-                player.crouched = False
-        
+            try:    
+                if pg.key.get_pressed()[key_bindings["right"]]:
+                    direction[0] += 1
+                    try:
+                        if held_keys[key_bindings["right"]] == frame - 1:
+                            player.speed[0] *= 1.0001
+                        else:
+                            player.speed[0] = 3*d_time*60
+                            
+                    except KeyError:
+                        player.speed[0] = 3*d_time*60
+                    
+                    held_keys[key_bindings["right"]] = frame
+            except:
+                if pg.mouse.get_pressed()[int(key_bindings["right"][-1])]:
+                    direction[0] += 1
+                    try:
+                        if held_keys[key_bindings["right"]] == frame - 1:
+                            player.speed[0] *= 1.0001
+                        else:
+                            player.speed[0] = 3*d_time*60
+                            
+                    except KeyError:
+                        player.speed[0] = 3*d_time*60
+                    
+                    held_keys[key_bindings["right"]] = frame
+            if direction[0] == 0:
+                player.speed[0] = 0
+            
+            try:
+                
+                if pg.key.get_pressed()[key_bindings["jump"]]:
+                    direction[1] -= 1
+                    if player.jump_enabled and player.jump_allowed:
+                        player.speed[1] -= 4*d_time*60
+                        player.jump_allowed = False
+                        player.on_ground = False
+                        player.cayote_timer = 0
+            except:
+                if pg.mouse.get_pressed()[int(key_bindings["jump"][-1])]:
+                    direction[1] -= 1
+                    if player.jump_enabled and player.jump_allowed:
+                        player.speed[1] -= 4*d_time*60
+                        player.jump_allowed = False
+                        player.on_ground = False
+                        player.cayote_timer = 0
+            try:
+                
+                if pg.key.get_pressed()[key_bindings["crouch"]]:
+                    direction[1] += 1
+                    player.crouched = True
+                else:
+                    player.crouched = False
+            
+            except:
+                if pg.mouse.get_pressed()[int(key_bindings["crouch"][-1])]:
+                    direction[1] += 1
+                    player.crouched = True
+                else:
+                    player.crouched = False
+            
+                
+            try:
+                if pg.key.get_pressed()[key_bindings["dash"]]:
+                    if player.dashes > 0 and player.dash_timer == -1 and vector_magnitude(direction):
+                        player.dashes -= 1
+                        player.dash_timer = 0
+                        player.speed[1] = 0
+                        
+                        direction = normalise(direction)
+                        
+                        player.dash_speed[0] += 10*direction[0]*d_time*60
+                        player.dash_speed[1] += 10*direction[1]*d_time*60
+            except:
+                if pg.mouse.get_pressed()[int(key_bindings["dash"][-1])]:
+                    if player.dashes > 0 and vector_magnitude(direction) > 0 and player.dash_timer == -1:
+                        player.dashes -= 1
+                        player.dash_timer = 0
+                        player.speed[1] = 0
+                        
+                        direction = normalise(direction)
+                        
+                        player.dash_speed[0] += 10*direction[0]*d_time*60
+                        player.dash_speed[1] += 10*direction[1]*d_time*60
             
         try:
-            if pg.key.get_pressed()[key_bindings["dash"]]:
-                if player.dashes > 0 and player.dash_timer == -1 and vector_magnitude(direction):
-                    player.dashes -= 1
-                    player.dash_timer = 0
-                    player.speed[1] = 0
-                    
-                    direction = normalise(direction)
-                    
-                    player.dash_speed[0] += 10*direction[0]*d_time*60
-                    player.dash_speed[1] += 10*direction[1]*d_time*60
+            if pg.key.get_pressed()[key_bindings["reset"]]:
+                save = open("levels\\level-"+str(level)+".lvl", "rb")
+                load_level(save)
+                
+                player = player[0]
         except:
-            if pg.mouse.get_pressed()[int(key_bindings["dash"][-1])]:
-                if player.dashes > 0 and vector_magnitude(direction) > 0 and player.dash_timer == -1:
-                    player.dashes -= 1
-                    player.dash_timer = 0
-                    player.speed[1] = 0
-                    
-                    direction = normalise(direction)
-                    
-                    player.dash_speed[0] += 10*direction[0]*d_time*60
-                    player.dash_speed[1] += 10*direction[1]*d_time*60
-        
+            if pg.mouse.get_pressed()[int(key_bindings["reset"][-1])]:
+                save = open("levels\\level-"+str(level)+".lvl", "rb")
+                load_level(save)
+                
+                player = player[0]
         screen.get_surface().fill((25, 25, 75))
         for platform in platforms:
             platform.draw()
@@ -972,4 +1031,4 @@ def main():
         d_time = current_time - previous_time
         previous_time = current_time
 
-menu()
+menu(True)

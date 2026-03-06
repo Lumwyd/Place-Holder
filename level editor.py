@@ -706,10 +706,10 @@ class Player:
         self.width = 40
         self.height = 55
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
-        self.jump_enabled = True
+        self.jump_enabled = False
         self.jump_allowed = False
         self.dashes = 0
-        self.max_dashes = 1
+        self.max_dashes = 0
         self.dash_speed = [0, 0]
         self.dash_timer = -1
         self.flow_mult = 1
@@ -717,6 +717,7 @@ class Player:
         self.on_ground = False
         self.cayote_timer = 0
         self.crouched = False
+        self.dead = False
         self.id = -1
         
     def draw(self):
@@ -860,6 +861,7 @@ def main():
             selected_object.location = [mouse_position[0], mouse_position[1]]
             selected_object.location[0] -= selected_offset[0]
             selected_object.location[1] -= selected_offset[1]
+            selected_object.centre = [selected_object.location[0] + selected_object.width/2, selected_object.location[1] + selected_object.height/2]
         
         for event in pg.event.get():
             if event.type == pg.QUIT:
