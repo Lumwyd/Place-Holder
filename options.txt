@@ -1,0 +1,14 @@
+fullscreen:0
+framerate:60
+resolution:1360X770
+
+Keybinds
+
+jump:w
+crouch:s
+left:a
+right:d
+dash:mouse_button-2
+
+reset:r
+menu:escape
