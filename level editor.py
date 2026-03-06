@@ -176,7 +176,7 @@ def menu(saveable = False):
     
     title = "PlaceHolder Level Editor"
     font = pg.font.SysFont("Comic Sans", 50)
-    title = font.render(title, True, (30, 0, 30))
+    title = font.render(title, True, (180, 200, 180))
     
     outer = (50, 100, 50)
     inner = (50, 50, 100)
@@ -678,12 +678,12 @@ def menu(saveable = False):
         screen.flip()
         
 class Platform:
-    def __init__(self, location, width, height, moving = False):
+    def __init__(self, location, width, height, type = 0):
         self.location = location
         self.width = width
         self.height = height
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
-        self.moving = moving
+        self.type = type
         self.destination = self.location
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
@@ -814,6 +814,7 @@ def main():
     allow_amount = 1
     selected_width = 1
     selected_height = 1
+    selected_type = 0
     
     allowed_objects = {}
     
@@ -833,11 +834,11 @@ def main():
         menu_position = mouse_position
     
         select_menu = {"allow": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) - 0.2, menu_position[1]/screen_height], outer, inner, "Allow Placement", radius=0),
-                       "disallow": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.1], outer, inner, "Disallow Placement", radius=0),
-                       "width": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.25], outer, inner, "Width: " + str(selected_width), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_width, slider_colour = (147, 107, 15), radius=0),
-                       "height": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.45], outer, inner, "Height: " + str(selected_height), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_height, slider_colour = (147, 107, 15), radius=0)}
+                       "width": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Width: " + str(selected_width), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_width, slider_colour = (147, 107, 15), radius=0),
+                       "height": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.35], outer, inner, "Height: " + str(selected_height), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_height, slider_colour = (147, 107, 15), radius=0),
+                       "type": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.55], outer, inner, "Type: " + str(selected_type), slider = True, slider_max = 5, slider_min = 0, slider_value = selected_type, slider_colour = (147, 107, 15), radius=0)}
 
-        allow_menu = {"number": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) + 0.2, menu_position[1]/screen_height], outer, inner, "Number: " + str(allow_amount), slider = True, slider_max = 10, slider_min = 0, slider_value = allow_amount, slider_colour = (147, 107, 15), radius=0)}
+        allow_menu = {"number": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width), menu_position[1]/screen_height], outer, inner, "Number: " + str(allow_amount), slider = True, slider_max = 10, slider_min = 0, slider_value = allow_amount, slider_colour = (147, 107, 15), radius=0)}
     
         if selected_object != None:
             selected_object.location = [mouse_position[0], mouse_position[1]]
@@ -870,10 +871,7 @@ def main():
                                 else:
                                     selected_object = None
                                     
-                                if item == "allow":
-                                   for thing in allowed_objects:
-                                       if allowed_objects        
-                                
+                                   
                     for entity in platforms + powerups + player:
                         temp_rect = pg.Rect(entity.location[0], entity.location[1], entity.width, entity.height)
                         if temp_rect.collidepoint(mouse_position):
@@ -923,21 +921,93 @@ def main():
                                         open_menu[item].text = "Height: " + str(int(selected_height))
                                         selected_objects[0].height = selected_height
                                         
+                                if item == "type" and len(selected_objects) == 1:
+                                    
+                                    temp = open_menu[item].get_focused(mouse_position)
+                                    
+                                    if temp[0]:
+                                        open_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                                        open_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                                            
+                                    else:
+                                        open_menu[item].outer_colour = outer
+                                        open_menu[item].inner_colour = inner
+                                    
+                                    if temp[1] != None:
+                                        selected_type = int(temp[1])
+                                        
+                                        if isinstance(selected_objects[0], PowerUp):
+                                            selected_objects[0].type = selected_type
+                                            
+                                        elif isinstance(selected_objects[0], Platform):
+                                            if selected_type > 2:
+                                                selected_type = 2
+                                            selected_objects[0].type = selected_type
+                                            
+                                        open_menu[item].slider_value = selected_type
+                                        open_menu[item].text = "Type: " + str(int(selected_type))
+                                        
+                                if item == "number" and len(selected_objects) == 1:
+                                    
+                                    temp = open_menu[item].get_focused(mouse_position)
+                                    
+                                    if temp[0]:
+                                        open_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                                        open_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                                            
+                                    else:
+                                        open_menu[item].outer_colour = outer
+                                        open_menu[item].inner_colour = inner
+                                    
+                                    if temp[1] != None:
+                                        allow_amount = int(temp[1])
+                                        open_menu[item].slider_value = allow_amount
+                                        open_menu[item].text = "Number: " + str(int(allow_amount))
+                                        allowed_objects[selected_objects[0]] = allow_amount
+                                        
                     
             if event.type == pg.MOUSEBUTTONUP:
                 if pg.mouse.get_just_released()[0]:
-                    for item in place_menu:
-                        if place_menu[item].get_focused(mouse_position) and item == "remove":
-                            if isinstance(selected_object, Player):
-                                player.remove(selected_object)
-                            elif isinstance(selected_object, Platform):
-                                platforms.remove(selected_object)
-                            elif isinstance(selected_object, PowerUp):
-                                powerups.remove(selected_object)
+                    for open_menu in open_menus:
+                        for item in open_menu:
+                            if open_menu[item].get_focused(mouse_position):
+                                if item == "remove":
+                                    if isinstance(selected_object, Player):
+                                        player.remove(selected_object)
+                                    elif isinstance(selected_object, Platform):
+                                        platforms.remove(selected_object)
+                                    elif isinstance(selected_object, PowerUp):
+                                        powerups.remove(selected_object)
+                                    
+                                if item == "allow":
+                                    menu_to_remove = None
+                                    for temp_menu in open_menus:
+                                        if "number" in temp_menu:
+                                            menu_to_remove = temp_menu
+                                            break
+                                    if menu_to_remove != None:
+                                        open_menus.remove(menu_to_remove)
+                                    allow_menu["number"].center[0] = open_menu[item].center[0]+0.2
+                                    open_menus.append(allow_menu)
+                                
+                                    if selected_objects[0] in allowed_objects:
+                                        allow_amount = allowed_objects[selected_objects[0]]
+                                        
+                                    allowed_objects[selected_objects[0]] = allow_amount
+                                        
                                 
                     selected_object = None
                 
                 if pg.mouse.get_just_released()[2]:
+                    
+                    for temp_menu in open_menus:
+                        menu_to_remove = None
+                        if "number" in temp_menu:
+                            menu_to_remove = temp_menu
+                            break
+                        if menu_to_remove != None:
+                            open_menus.remove(menu_to_remove)
+                    
                     select_end = mouse_position
                     selected_objects = []
                     selected_rect = pg.Rect(select_start[0], select_start[1], abs(select_start[0] - select_end[0]), abs(select_start[1] - select_end[1]))

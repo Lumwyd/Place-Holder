@@ -176,7 +176,7 @@ def menu(saveable = False):
     
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
-    title = font.render(title, True, (30, 0, 30))
+    title = font.render(title, True, (180, 200, 180))
     
     outer = (50, 100, 50)
     inner = (50, 50, 100)
@@ -678,12 +678,12 @@ def menu(saveable = False):
         screen.flip()
         
 class Platform:
-    def __init__(self, location, width, height, moving = False):
+    def __init__(self, location, width, height, type = 0):
         self.location = location
         self.width = width
         self.height = height
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
-        self.moving = moving
+        self.type = type
         self.destination = self.location
         self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
