@@ -153,14 +153,18 @@ for key in key_bindings:
         key_names[key] = pg.key.name(key_bindings[key])
   
 def load(save):
-    global stars
-    global level
+    global platforms
+    global powerups
+    global player
+    global allowed_objects
     
     data = pickle.load(save)
     
     try:
-       stars = data[0]
-       level = data[1]
+       platforms = data[0]
+       powerups = data[1]
+       player = data[2]
+       allowed_objects = data[3]
     except IndexError:
         pass
         
@@ -173,6 +177,11 @@ def menu(saveable = False):
     global framerate
     global framerate_text
     global resolution
+    
+    global platforms
+    global powerups
+    global player
+    global allowed_objects
     
     title = "PlaceHolder Level Editor"
     font = pg.font.SysFont("Comic Sans", 50)
@@ -218,8 +227,8 @@ def menu(saveable = False):
     
     save_count = 0
     saves = []
-    for file in os.listdir("saves"):
-        if file.endswith(".sav"):
+    for file in os.listdir("levels"):
+        if file.endswith(".lvl"):
             save_count += 1
             saves.append(file)
     
@@ -372,7 +381,7 @@ def menu(saveable = False):
                             options.close()                                                                                               
                         
                         elif item in load_menu and not item == "back_tm":
-                            save = open("saves\\"+item, "rb")
+                            save = open("levels\\"+item, "rb")
                             load(save)
                             main()
                               
@@ -486,9 +495,9 @@ def menu(saveable = False):
                                     if event.key == pg.K_RETURN:
                                         
                                         if len(save_name) >=1:
-                                            save = open("saves\\"+save_name+".sav", "wb")
+                                            save = open("levels\\"+save_name+".lvl", "wb")
                                             
-                                            data = [stars, level]
+                                            data = [platforms, powerups, player, allowed_objects]
                                             
                                             pickle.dump(data, save)
                                             
@@ -801,22 +810,29 @@ class PowerUp:
         
     def draw(self):
         pg.draw.rect(screen.get_surface(), (255, 200, 200), (self.location, (self.width, self.height)))
-        
+      
+platforms = []
+powerups = []
+player = []
+allowed_objects = {}  
         
 def main():
-    platforms = []
-    powerups = []
-    player = []
+    global platforms
+    global powerups
+    global player
+    global allowed_objects
+    global cont
+    
+    cont = True
+    
     selected_objects = []
     selected_object = None
     selected_offset = [0, 0]
-    mouse_mode = None
     allow_amount = 1
     selected_width = 1
     selected_height = 1
     selected_type = 0
     
-    allowed_objects = {}
     
     outer = (50, 100, 50)
     inner = (50, 50, 100)
@@ -886,7 +902,7 @@ def main():
                         for item in open_menu:
                             if open_menu[item].get_focused(mouse_position) and (pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]):
                                 
-                                if item == "width" and len(selected_objects) == 1:
+                                if item == "width" and len(selected_objects) == 1 and selected_object == None:
                                     temp = open_menu[item].get_focused(mouse_position)
                                     
                                     if temp[0]:
@@ -898,12 +914,12 @@ def main():
                                         open_menu[item].inner_colour = inner
                                     
                                     if temp[1] != None:
-                                        selected_width = temp[1]
+                                        selected_width = int(temp[1])
                                         open_menu[item].slider_value = selected_width
                                         open_menu[item].text = "Width: " + str(int(selected_width))
                                         selected_objects[0].width = selected_width
                                         
-                                if item == "height" and len(selected_objects) == 1:
+                                if item == "height" and len(selected_objects) == 1 and selected_object == None:
                                     
                                     temp = open_menu[item].get_focused(mouse_position)
                                     
@@ -916,12 +932,12 @@ def main():
                                         open_menu[item].inner_colour = inner
                                     
                                     if temp[1] != None:
-                                        selected_height = temp[1]
+                                        selected_height = int(temp[1])
                                         open_menu[item].slider_value = selected_height
                                         open_menu[item].text = "Height: " + str(int(selected_height))
                                         selected_objects[0].height = selected_height
                                         
-                                if item == "type" and len(selected_objects) == 1:
+                                if item == "type" and len(selected_objects) == 1 and selected_object == None:
                                     
                                     temp = open_menu[item].get_focused(mouse_position)
                                     
@@ -940,9 +956,10 @@ def main():
                                             selected_objects[0].type = selected_type
                                             
                                         elif isinstance(selected_objects[0], Platform):
-                                            if selected_type > 2:
-                                                selected_type = 2
                                             selected_objects[0].type = selected_type
+                                        
+                                        else:
+                                            selected_type = 0
                                             
                                         open_menu[item].slider_value = selected_type
                                         open_menu[item].text = "Type: " + str(int(selected_type))
@@ -1028,7 +1045,10 @@ def main():
                         if menu_to_remove != None:
                             open_menus.remove(menu_to_remove)
                         open_menus.append(select_menu)
-                            
+                     
+            if event.type == pg.KEYDOWN:
+                if event.key == key_bindings["menu"]:
+                    menu(True)       
                     
                             
         screen.get_surface().fill((25, 25, 75))
@@ -1050,4 +1070,4 @@ def main():
         
         clock.tick(framerate)
 
-menu()
+menu(True)
