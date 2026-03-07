@@ -841,6 +841,7 @@ def main():
     place_menu = {"player": button(screen, 0.2, 0.1, [0.1, 0.05], outer, inner, "Player", radius=0),
                   "platform": button(screen, 0.2, 0.1, [0.3, 0.05], outer, inner, "Platform", radius=0),
                   "power_up": button(screen, 0.2, 0.1, [0.5, 0.05], outer, inner, "Power Up", radius=0),
+                  "clear": button(screen, 0.2, 0.1, [0.7, 0.05], outer, inner, "Clear Allowed", radius=0),
                   "remove": button(screen, 0.1, 0.15, [0.9, 0.05], outer, inner, "[X]", radius=0)}
     
     open_menus = [place_menu]
@@ -888,6 +889,7 @@ def main():
                                 
                                 else:
                                     selected_object = None
+                                    
                                     
                                    
                     for entity in platforms + powerups + player:
@@ -997,6 +999,9 @@ def main():
                                         platforms.remove(selected_object)
                                     elif isinstance(selected_object, PowerUp):
                                         powerups.remove(selected_object)
+                                        
+                                if item == "clear":
+                                    allowed_objects = {}
                                     
                                 if item == "allow":
                                     menu_to_remove = None

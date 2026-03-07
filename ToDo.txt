@@ -3,10 +3,10 @@ Game Mechanics
     Implement Moving Platforms
     Allow placement of allowed objects
     Add Stars
-    change level when landing on finish platform
 
 GUI
-    Show Allowed Objects
+    Let player select completed levels from pause screen.
+    Add level names to screen
 
 Levels
     Make more levels

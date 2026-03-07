@@ -6,6 +6,7 @@ import pygame as pg
 from pygame._sdl2.video import Window
 from random import *
 from C_librarianthefirstsecondandlast import *
+from copy import *
 
 pg.init()
 
@@ -704,8 +705,8 @@ class Platform:
         self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
-    def draw(self):
-        pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+    def draw(self, surface = screen.get_surface()):
+        pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
         
     def update(self):
         pass
@@ -730,8 +731,8 @@ class Player:
         self.dead = False
         self.id = -1
         
-    def draw(self):
-        pg.draw.rect(screen.get_surface(), (220, 255, 220), (self.location, (self.width, self.height)))
+    def draw(self, surface = screen.get_surface()):
+        pg.draw.rect(surface, (220, 255, 220), (self.location, (self.width, self.height)))
     
     def collide(self, entity):
         entity_rect = pg.Rect(entity.location[0], entity.location[1], entity.width, entity.height)
@@ -744,7 +745,11 @@ class Player:
         return False
     
     def update(self, entity_list, d_time):
+        global platforms
         global powerups
+        global player
+        global allowed_objects
+        global level
         self.cayote_timer += d_time
         
         
@@ -805,6 +810,12 @@ class Player:
                     
                     if entity.type == 2:
                         self.dead = True
+                    if entity.type == 5:
+                        level += 1
+                            
+                        save = open("levels\\level-"+str(level)+".lvl", "rb")
+                        load_level(save)
+                        player = player[0]
                             
                 elif isinstance(entity, PowerUp):
                     if entity.type == 0:
@@ -814,7 +825,10 @@ class Player:
                     elif entity.type == 1:
                         self.max_dashes += 1
                         self.dashes = self.max_dashes  
-                        powerups.remove(entity)      
+                        powerups.remove(entity)   
+                    elif entity.type == 5:
+                        stars[level] = True  
+                        powerups.remove(entity)    
                     
         if self.on_ground:
             if self.dash_timer == -1:
@@ -824,7 +838,6 @@ class Player:
             self.jump_allowed = False
             
         if self.dead:
-            
             self.height = 30
             self.width = 55
  
@@ -837,8 +850,8 @@ class PowerUp:
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
-    def draw(self):
-        pg.draw.rect(screen.get_surface(), (255, 200, 200), (self.location, (self.width, self.height)))
+    def draw(self, surface = screen.get_surface()):
+        pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
        
 global level
 global stars
@@ -1019,6 +1032,27 @@ def main():
         
         for power in powerups:
             power.draw()
+            
+        allowed_images = {}
+        for thing in allowed_objects:
+            temp_surface = pg.Surface([thing.width, thing.height])
+            thing.location = [0, 0]
+            thing.draw(temp_surface)
+            ratio = 80 / max(thing.width, thing.height) 
+            temp_surface = pg.transform.scale_by(temp_surface, ratio)
+            allowed_images[temp_surface] = thing
+            
+        start_x = 20
+        start_y = 20
+        i = 0
+        for image in allowed_images:
+            center = image.get_height()/2
+            screen.get_surface().blit(image, [start_x + (100 * i), 50 - center])
+            font = pg.font.SysFont("Comic Sans", 20)
+            number = allowed_objects[allowed_images[image]]
+            number = font.render(str(number), True, (180, 200, 180))
+            screen.get_surface().blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
+            i += 1
         
         player.update(platforms+powerups, d_time)
         player.draw()
