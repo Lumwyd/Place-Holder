@@ -459,6 +459,28 @@ def menu(saveable = False):
                                             
                                                 if mods == 1 or mods == 2 or mods == 8192:
                                                     character = character.upper()
+                                                    if character == "-":
+                                                        character = "_"
+                                                    elif character == "1":
+                                                        character = "!"
+                                                    elif character == "2":
+                                                        character = "@"
+                                                    elif character == "3":
+                                                        character = "#"
+                                                    elif character == "4":
+                                                        character = "$"
+                                                    elif character == "5":
+                                                        character = "%"
+                                                    elif character == "6":
+                                                        character = "^"
+                                                    elif character == "7":
+                                                        character = "&"
+                                                    elif character == "8":
+                                                        character = "*"
+                                                    elif character == "9":
+                                                        character = "()"
+                                                    elif character == "0":
+                                                        character = ")"
                                                 save_name += character
                                                 
                                             else:
@@ -701,7 +723,11 @@ class Platform:
         self.height = height
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         self.type = type
-        self.destination = self.location
+        self.start = [self.location[0], self.location[1]]
+        self.offset = [0, 0]
+        
+        self.passengers = []
+        
         self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
@@ -709,7 +735,74 @@ class Platform:
         pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
         
     def update(self):
-        pass
+        global d_time
+        if self.type == 1 and "-moving_end-" in self.tags:
+            
+            destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
+            
+            x_diff = destination[0] - self.start[0]
+            y_diff = destination[1] - self.start[1]
+            
+            self.location[0] += x_diff*d_time/10
+            self.location[1] += y_diff*d_time/10
+            
+            for passenger in self.passengers:
+                passenger.location[0] += x_diff*d_time/10
+                passenger.location[1] += y_diff*d_time/10
+            
+            self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
+            
+            if destination[0] > self.start[0]:
+                if self.location[0] > destination[0]:
+                    self.location[0] = destination[0]
+            elif destination[0] < self.start[0]:
+                if self.location[0] < destination[0]:
+                    self.location[0] = destination[0]
+            
+            if destination[1] > self.start[1]:
+                if self.location[1] > destination[1]:
+                    self.location[1] = destination[1]
+            elif destination[1] < self.start[1]:
+                if self.location[1] < destination[1]:
+                    self.location[1] = destination[1]
+                    
+            if self.location == destination:
+                self.tags = self.tags.replace("-moving_end-", "-moving_start-")
+            
+        if self.type == 1 and "-moving_start-" in self.tags:
+            destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
+            
+            x_diff = self.start[0] - destination[0]
+            y_diff = self.start[1] - destination[1]
+            
+            self.location[0] += x_diff*d_time/10
+            self.location[1] += y_diff*d_time/10
+            
+            for passenger in self.passengers:
+                passenger.location[0] += x_diff*d_time/10
+                passenger.location[1] += y_diff*d_time/10
+            
+            self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
+            
+            if self.start[0] > destination[0]:
+                if self.location[0] > self.start[0]:
+                    self.location[0] = self.start[0]
+            elif self.start[0] < destination[0]:
+                if self.location[0] < self.start[0]:
+                    self.location[0] = self.start[0]
+            
+            if self.start[1] > destination[1]:
+                if self.location[1] > self.start[1]:
+                    self.location[1] = self.start[1]
+            elif self.start[1] < destination[1]:
+                if self.location[1] < self.start[1]:
+                    self.location[1] = self.start[1]
+                    
+            if self.location == self.start:
+                self.tags = self.tags.replace("-moving_start-", "-moving_end-")
+                
+            
+            
     
 class Player:
     def __init__(self, location):
@@ -729,6 +822,7 @@ class Player:
         self.cayote_timer = 0
         self.crouched = False
         self.dead = False
+        self.tags = ""
         self.id = -1
         
     def draw(self, surface = screen.get_surface()):
@@ -788,8 +882,15 @@ class Player:
             self.height = 55
         
         for entity in entity_list:
-            if self.collide(entity):
+            if self.collide(entity) and not "-no_collide-" in entity.tags and not "-no_collide-" in self.tags:
                 if isinstance(entity, Platform):
+                    
+                    if not "moving" in entity.tags:
+                        entity.tags += "-moving_end-"
+                        
+                    if self in entity.passengers:
+                        entity.passengers.remove(self)
+                    
                     x_diff = self.centre[0] - entity.centre[0]
                     y_diff = self.centre[1] - entity.centre[1]
                     
@@ -803,6 +904,9 @@ class Player:
                         if y_diff < 0:
                             self.location[1] -= (entity.height/2 + self.height/2 + 1) - abs(y_diff)
                             self.on_ground = True
+                            if not self in entity.passengers:
+                                entity.passengers.append(self)
+                                
                             self.cayote_timer = 0
                             self.speed[1] = 0
                         else:
@@ -848,6 +952,7 @@ class PowerUp:
         self.width = 50
         self.height = 50
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
+        self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
     def draw(self, surface = screen.get_surface()):
@@ -856,7 +961,7 @@ class PowerUp:
 global level
 global stars
 
-level = 1
+level = 2
 stars = {}
 
 global platforms
@@ -866,7 +971,8 @@ global allowed_objects
 
 platforms = []
 powerups = []
-player = Player([400, 350])
+player = []
+allowed_objects = {}
  
 def main():
     
@@ -878,7 +984,8 @@ def main():
     save = open("levels\\level-"+str(level)+".lvl", "rb")
     load_level(save)
     
-    player = player[0]
+    if len(player) == 1:
+        player = player[0]
     
     global cont
     cont = True
@@ -887,19 +994,110 @@ def main():
     frame = 0
     previous_time = 0
     current_time = time.time()
+    global d_time
     d_time = 0.18
     direction = [0, 0]
     
-    
+    selected_offset = [0, 0]
+    selected_object = None
     
     while True:
+        mouse_position = pg.mouse.get_pos()
         direction = [0, 0]
         frame += 1
+        screen.get_surface().fill((25, 25, 75))
+        
+        allowed_images = {}
+        for thing in allowed_objects:
+            temp_surface = pg.Surface([thing.width, thing.height])
+            thing.location = [0, 0]
+            if allowed_objects[thing] == 0:
+                temp_surface.fill((70, 70, 70))
+            else:
+                thing.draw(temp_surface)
+            ratio = 80 / max(thing.width, thing.height) 
+            temp_surface = pg.transform.scale_by(temp_surface, ratio)
+            allowed_images[temp_surface] = thing
+            
+        start_x = 20
+        start_y = 20
+        i = 0
+        for image in allowed_images:
+                
+            center = image.get_height()/2
+            screen.get_surface().blit(image, [start_x + (100 * i), 50 - center])
+            font = pg.font.SysFont("Comic Sans", 20)
+            number = allowed_objects[allowed_images[image]]
+            number = font.render(str(number), True, (180, 200, 180))
+            screen.get_surface().blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
+            i += 1
         
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 quit()
-        if player.dead == False:
+            if event.type == pg.MOUSEBUTTONDOWN:
+                for thing in platforms + powerups + [player]:
+                    temp_rect = pg.Rect(thing.location, [thing.width, thing.height])
+                    
+                    if temp_rect.collidepoint(mouse_position):
+                        for item in allowed_objects:
+                            if item.id == thing.id:
+                                
+                                selected_object = thing
+                                selected_object.tags += "-no_collide-"
+                                selected_offset = [mouse_position[0] - selected_object.location[0], mouse_position[1] - selected_object.location[1]]
+                            
+                                break
+                
+                if selected_object == None:
+                    start_x = 20
+                    i = 0
+                    for image in allowed_images:
+                        center = image.get_height()/2
+                        image_rect = pg.Rect([start_x + (100 * i), 50 - center], [80, 80])
+                        
+                        if image_rect.collidepoint(mouse_position) and allowed_objects[allowed_images[image]] > 0:
+                            selected_object = deepcopy(allowed_images[image])
+                            allowed_objects[allowed_images[image]] -= 1
+                            selected_object.tags += "-no_collide-"
+                            if isinstance(allowed_images[image], Player) and player == []:
+                                player.append(selected_object)
+                            
+                            elif isinstance(allowed_images[image], Platform):
+                                platforms.append(selected_object)
+                            
+                            elif isinstance(allowed_images[image], PowerUp):
+                                powerups.append(selected_object)
+                                
+                        
+                        i += 1
+                
+                  
+            if event.type == pg.MOUSEBUTTONUP:
+                if pg.mouse.get_just_released()[0]:
+                    start_x = 20
+                    i = 0
+                    for image in allowed_images:
+                        center = image.get_height()/2
+                        image_rect = pg.Rect([start_x + (100 * i), 50 - center], [80, 80])
+                        
+                        if image_rect.collidepoint(mouse_position):
+                            if allowed_images[image].id == selected_object.id:
+                                allowed_objects[allowed_images[image]] += 1
+                                
+                                if isinstance(selected_object, Player):
+                                    player.remove(selected_object)
+                                elif isinstance(selected_object, Platform):
+                                    platforms.remove(selected_object)
+                                elif isinstance(selected_object, PowerUp):
+                                    powerups.remove(selected_object)
+                
+                        i += 1
+                if selected_object != None:
+                    selected_object.tags = selected_object.tags.replace("-no_collide-", "")
+                selected_object = None
+                        
+        if player.dead == False and player != [] and not player == selected_object:
             try:
                 if pg.key.get_pressed()[key_bindings["left"]]:
                     direction[0] -=1
@@ -1018,14 +1216,25 @@ def main():
                 save = open("levels\\level-"+str(level)+".lvl", "rb")
                 load_level(save)
                 
-                player = player[0]
+                if len(player) == 1:
+                    player = player[0]
+                    
         except:
             if pg.mouse.get_pressed()[int(key_bindings["reset"][-1])]:
                 save = open("levels\\level-"+str(level)+".lvl", "rb")
                 load_level(save)
                 
-                player = player[0]
-        screen.get_surface().fill((25, 25, 75))
+                if len(player) == 1:
+                    player = player[0]
+                            
+        if selected_object != None:
+            selected_object.location = [mouse_position[0], mouse_position[1]]
+            selected_object.location[0] -= selected_offset[0]
+            selected_object.location[1] -= selected_offset[1]
+            selected_object.centre = [selected_object.location[0] + selected_object.width/2, selected_object.location[1] + selected_object.height/2]
+            if isinstance(selected_object, Platform) and selected_object.type == 1:
+                selected_object.start = [selected_object.location[0], selected_object.location[1]]
+                    
         for platform in platforms:
             platform.draw()
             platform.update()
@@ -1033,26 +1242,6 @@ def main():
         for power in powerups:
             power.draw()
             
-        allowed_images = {}
-        for thing in allowed_objects:
-            temp_surface = pg.Surface([thing.width, thing.height])
-            thing.location = [0, 0]
-            thing.draw(temp_surface)
-            ratio = 80 / max(thing.width, thing.height) 
-            temp_surface = pg.transform.scale_by(temp_surface, ratio)
-            allowed_images[temp_surface] = thing
-            
-        start_x = 20
-        start_y = 20
-        i = 0
-        for image in allowed_images:
-            center = image.get_height()/2
-            screen.get_surface().blit(image, [start_x + (100 * i), 50 - center])
-            font = pg.font.SysFont("Comic Sans", 20)
-            number = allowed_objects[allowed_images[image]]
-            number = font.render(str(number), True, (180, 200, 180))
-            screen.get_surface().blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
-            i += 1
         
         player.update(platforms+powerups, d_time)
         player.draw()

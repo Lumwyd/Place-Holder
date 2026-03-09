@@ -1,7 +1,7 @@
 
 Game Mechanics
-    Implement Moving Platforms
-    Allow placement of allowed objects
+    add camera triggers
+        -allow customisation of where and how they shift the screen
     Add Stars
 
 GUI

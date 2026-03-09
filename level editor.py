@@ -451,6 +451,28 @@ def menu(saveable = False):
                                             
                                                 if mods == 1 or mods == 2 or mods == 8192:
                                                     character = character.upper()
+                                                    if character == "-":
+                                                        character = "_"
+                                                    elif character == "1":
+                                                        character = "!"
+                                                    elif character == "2":
+                                                        character = "@"
+                                                    elif character == "3":
+                                                        character = "#"
+                                                    elif character == "4":
+                                                        character = "$"
+                                                    elif character == "5":
+                                                        character = "%"
+                                                    elif character == "6":
+                                                        character = "^"
+                                                    elif character == "7":
+                                                        character = "&"
+                                                    elif character == "8":
+                                                        character = "*"
+                                                    elif character == "9":
+                                                        character = "()"
+                                                    elif character == "0":
+                                                        character = ")"
                                                 save_name += character
                                                 
                                             else:
@@ -496,6 +518,10 @@ def menu(saveable = False):
                                         
                                         if len(save_name) >=1:
                                             save = open("levels\\"+save_name+".lvl", "wb")
+                                            
+                                            for thing in allowed_objects.keys():
+                                                if allowed_objects[thing] == 0:
+                                                    allowed_objects.pop(thing)
                                             
                                             data = [platforms, powerups, player, allowed_objects]
                                             
@@ -688,12 +714,17 @@ def menu(saveable = False):
         
 class Platform:
     def __init__(self, location, width, height, type = 0):
-        self.location = location
+        self.location = list(location)
         self.width = width
         self.height = height
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         self.type = type
-        self.destination = self.location
+        self.start = [self.location[0], self.location[1]]
+        self.offset = [0, 0]
+        
+        self.passengers = []
+        
+        self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
     def draw(self):
@@ -702,7 +733,7 @@ class Platform:
     
 class Player:
     def __init__(self, location):
-        self.location = location
+        self.location = list(location)
         self.width = 40
         self.height = 55
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
@@ -718,6 +749,7 @@ class Player:
         self.cayote_timer = 0
         self.crouched = False
         self.dead = False
+        self.tags = ""
         self.id = -1
         
     def draw(self):
@@ -802,11 +834,12 @@ class Player:
         
 class PowerUp:
     def __init__(self, location, type):
-        self.location = location
+        self.location = list(location)
         self.type = type
-        self.width = 50
-        self.height = 50
+        self.width = 30
+        self.height = 30
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
+        self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
     def draw(self):
@@ -834,6 +867,9 @@ def main():
     selected_height = 1
     selected_type = 0
     
+    target_x_offset = 0
+    target_y_offset = 0
+    
     
     outer = (50, 100, 50)
     inner = (50, 50, 100)
@@ -854,7 +890,11 @@ def main():
         select_menu = {"allow": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) - 0.2, menu_position[1]/screen_height], outer, inner, "Allow Placement", radius=0),
                        "width": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Width: " + str(selected_width), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_width, slider_colour = (147, 107, 15), radius=0),
                        "height": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.35], outer, inner, "Height: " + str(selected_height), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_height, slider_colour = (147, 107, 15), radius=0),
-                       "type": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.55], outer, inner, "Type: " + str(selected_type), slider = True, slider_max = 5, slider_min = 0, slider_value = selected_type, slider_colour = (147, 107, 15), radius=0)}
+                       "type": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.55], outer, inner, "Type: " + str(selected_type), slider = True, slider_max = 5, slider_min = 0, slider_value = selected_type, slider_colour = (147, 107, 15), radius=0),
+                       "target": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.65], outer, inner, "Change Target", radius=0)}
+        
+        target_menu = {"target_x": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset" + str(selected_width), slider = True, slider_max = 500, slider_min = -500, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
+                       "target_y": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(selected_height), slider = True, slider_max = 500, slider_min = -500, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0)}
 
         allow_menu = {"number": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width), menu_position[1]/screen_height], outer, inner, "Number: " + str(allow_amount), slider = True, slider_max = 10, slider_min = 0, slider_value = allow_amount, slider_colour = (147, 107, 15), radius=0)}
     
@@ -863,6 +903,8 @@ def main():
             selected_object.location[0] -= selected_offset[0]
             selected_object.location[1] -= selected_offset[1]
             selected_object.centre = [selected_object.location[0] + selected_object.width/2, selected_object.location[1] + selected_object.height/2]
+            if isinstance(selected_object, Platform) and selected_object.type == 1:
+                selected_object.start = [selected_object.location[0], selected_object.location[1]]
         
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -968,7 +1010,7 @@ def main():
                                         open_menu[item].slider_value = selected_type
                                         open_menu[item].text = "Type: " + str(int(selected_type))
                                         
-                                if item == "number" and len(selected_objects) == 1:
+                                if item == "number" and len(selected_objects) == 1 and selected_object == None:
                                     
                                     temp = open_menu[item].get_focused(mouse_position)
                                     
@@ -985,6 +1027,40 @@ def main():
                                         open_menu[item].slider_value = allow_amount
                                         open_menu[item].text = "Number: " + str(int(allow_amount))
                                         allowed_objects[selected_objects[0]] = allow_amount
+                                        
+                                if item == "target_x" and len(selected_objects) == 1 and selected_object == None:
+                                    temp = open_menu[item].get_focused(mouse_position)
+                                    
+                                    if temp[0]:
+                                        open_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                                        open_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                                            
+                                    else:
+                                        open_menu[item].outer_colour = outer
+                                        open_menu[item].inner_colour = inner
+                                    
+                                    if temp[1] != None:
+                                        target_x_offset = int(temp[1])
+                                        open_menu[item].slider_value = target_x_offset
+                                        open_menu[item].text = "X Offset: " + str(int(target_x_offset))
+                                        selected_objects[0].offset[0] = target_x_offset
+                                        
+                                if item == "target_y" and len(selected_objects) == 1 and selected_object == None:
+                                    temp = open_menu[item].get_focused(mouse_position)
+                                    
+                                    if temp[0]:
+                                        open_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                                        open_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                                            
+                                    else:
+                                        open_menu[item].outer_colour = outer
+                                        open_menu[item].inner_colour = inner
+                                    
+                                    if temp[1] != None:
+                                        target_y_offset = int(temp[1])
+                                        open_menu[item].slider_value = target_y_offset
+                                        open_menu[item].text = "Y Offset: " + str(int(target_y_offset))
+                                        selected_objects[0].offset[1] = target_y_offset
                                         
                     
             if event.type == pg.MOUSEBUTTONUP:
@@ -1018,8 +1094,22 @@ def main():
                                         allow_amount = allowed_objects[selected_objects[0]]
                                         
                                     allowed_objects[selected_objects[0]] = allow_amount
-                                        
-                                
+                                     
+                                if item == "target" and isinstance(selected_objects[0], Platform) and selected_objects[0].type == 1:   
+                                    menu_to_remove = None
+                                    for temp_menu in open_menus:
+                                        if "target_x" in temp_menu:
+                                            menu_to_remove = temp_menu
+                                            break
+                                    if menu_to_remove != None:
+                                        open_menus.remove(menu_to_remove)
+                                    target_menu["target_x"].center[0] = open_menu[item].center[0]+0.2
+                                    target_menu["target_x"].center[1] = open_menu["allow"].center[1]
+                                    target_menu["target_y"].center[0] = open_menu[item].center[0]+0.2
+                                    target_menu["target_y"].center[1] = open_menu["allow"].center[1]+0.2
+                                    open_menus.append(target_menu)
+                                                               
+                            
                     selected_object = None
                 
                 if pg.mouse.get_just_released()[2]:
