@@ -155,13 +155,13 @@ for key in key_bindings:
   
 def load(save):
     global stars
-    global level
+    global level_number
     
     data = pickle.load(save)
     
     try:
        stars = data[0]
-       level = data[1]
+       level_number = data[1]
     except IndexError:
         pass
     
@@ -732,7 +732,18 @@ class Platform:
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
     def draw(self, surface = screen.get_surface()):
-        pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+        if self.type == 0:
+            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 1:
+            pg.draw.rect(surface, (240, 50, 240), (self.location, (self.width, self.height)))
+        elif self.type == 2:
+            pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)))
+        elif self.type == 3:
+            pg.draw.rect(surface, (50, 50, 50), (self.location, (self.width, self.height)))
+        elif self.type == 4:
+            pg.draw.rect(surface, (50, 240, 50), (self.location, (self.width, self.height)))
+        elif self.type == 5:
+            pg.draw.rect(surface, (255, 150, 150), (self.location, (self.width, self.height)))
         
     def update(self):
         global d_time
@@ -800,10 +811,7 @@ class Platform:
                     
             if self.location == self.start:
                 self.tags = self.tags.replace("-moving_start-", "-moving_end-")
-                
-            
-            
-    
+                 
 class Player:
     def __init__(self, location):
         self.location = location
@@ -830,11 +838,10 @@ class Player:
     
     def collide(self, entity):
         entity_rect = pg.Rect(entity.location[0], entity.location[1], entity.width, entity.height)
-        points = [self.location, [self.location[0] + self.width, self. location[1]], [self.location[0] + self.width, self.location[1] + self.height], [self.location[0], self.location[1] + self.height]]
+        self_rect = pg.Rect(self.location, [self.width, self.height])
         
-        for point in points:
-            if entity_rect.collidepoint(point[0], point[1]):
-                return True
+        if entity_rect.colliderect(self_rect):
+            return True
             
         return False
     
@@ -843,7 +850,9 @@ class Player:
         global powerups
         global player
         global allowed_objects
-        global level
+        global level_number
+        global level_name
+        global text
         self.cayote_timer += d_time
         
         
@@ -882,15 +891,18 @@ class Player:
             self.height = 55
         
         for entity in entity_list:
+            try:
+                if self in entity.passengers:
+                        entity.passengers.remove(self)
+            except:
+                pass
             if self.collide(entity) and not "-no_collide-" in entity.tags and not "-no_collide-" in self.tags:
                 if isinstance(entity, Platform):
                     
                     if not "moving" in entity.tags:
                         entity.tags += "-moving_end-"
                         
-                    if self in entity.passengers:
-                        entity.passengers.remove(self)
-                    
+                                    
                     x_diff = self.centre[0] - entity.centre[0]
                     y_diff = self.centre[1] - entity.centre[1]
                     
@@ -902,7 +914,7 @@ class Player:
 
                     else:
                         if y_diff < 0:
-                            self.location[1] -= (entity.height/2 + self.height/2 + 1) - abs(y_diff)
+                            self.location[1] -= (entity.height/2 + self.height/2) - abs(y_diff)
                             self.on_ground = True
                             if not self in entity.passengers:
                                 entity.passengers.append(self)
@@ -910,16 +922,21 @@ class Player:
                             self.cayote_timer = 0
                             self.speed[1] = 0
                         else:
-                            self.location[1] += (entity.height/2 + self.height/2 + 1) - abs(y_diff)
+                            self.location[1] += (entity.height/2 + self.height/2) - abs(y_diff)
                     
                     if entity.type == 2:
                         self.dead = True
                     if entity.type == 5:
                         level += 1
-                            
-                        save = open("levels\\level-"+str(level)+".lvl", "rb")
-                        load_level(save)
-                        player = player[0]
+                        for levels in os.walk("levels"):
+                            for level in levels[2]:
+                                if level.split("-")[0] == str(level_number):
+                                    
+                                    level_name = level.split("-")[1].removesuffix(".lvl")
+                                    save = open("levels\\"+ level, "rb")
+                                    load_level(save)
+                                    text[temp] = [5, 5]
+                                    break
                             
                 elif isinstance(entity, PowerUp):
                     if entity.type == 0:
@@ -956,12 +973,24 @@ class PowerUp:
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
     def draw(self, surface = screen.get_surface()):
-        pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
+        if self.type == 0:
+            pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
+        elif self.type == 1:
+            pg.draw.rect(surface, (255, 100, 255), (self.location, (self.width, self.height)))
+        elif self.type == 2:
+            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 3:
+            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 4:
+            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 5:
+            pg.draw.rect(surface, (255, 255, 200), (self.location, (self.width, self.height)))
+        
        
-global level
+global level_number
 global stars
 
-level = 2
+level_number = 2
 stars = {}
 
 global platforms
@@ -980,9 +1009,17 @@ def main():
     global powerups
     global player
     global allowed_objects
+    global text
     
-    save = open("levels\\level-"+str(level)+".lvl", "rb")
-    load_level(save)
+    for levels in os.walk("levels"):
+        for level in levels[2]:
+            if level.split("-")[0] == str(level_number):
+                
+                level_name = level.split("-")[1].removesuffix(".lvl")
+                save = open("levels\\"+ level, "rb")
+                load_level(save)
+                break
+    
     
     if len(player) == 1:
         player = player[0]
@@ -992,16 +1029,22 @@ def main():
     
     held_keys = {}
     frame = 0
-    previous_time = 0
+    previous_time = time.time()
     current_time = time.time()
     global d_time
-    d_time = 0.18
+    d_time = 0.018
     direction = [0, 0]
     
     selected_offset = [0, 0]
     selected_object = None
     
-    while True:
+    font = pg.font.SysFont("Comic Sans", 50)
+    temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
+    
+    text = {}
+    text[temp] = [5, 5]
+    
+    while True:       
         mouse_position = pg.mouse.get_pos()
         direction = [0, 0]
         frame += 1
@@ -1213,16 +1256,30 @@ def main():
             
         try:
             if pg.key.get_pressed()[key_bindings["reset"]]:
-                save = open("levels\\level-"+str(level)+".lvl", "rb")
-                load_level(save)
+                for levels in os.walk("levels"):
+                    for level in levels[2]:
+                        if level.split("-")[0] == str(level_number):
+                            
+                            level_name = level.split("-")[1] 
+                            save = open("levels\\"+ level, "rb")
+                            load_level(save)
+                            text[temp] = [5, 5]
+                            break
                 
                 if len(player) == 1:
                     player = player[0]
                     
         except:
             if pg.mouse.get_pressed()[int(key_bindings["reset"][-1])]:
-                save = open("levels\\level-"+str(level)+".lvl", "rb")
-                load_level(save)
+                for levels in os.walk("levels"):
+                    for level in levels[2]:
+                        if level.split("-")[0] == str(level_number):
+                            
+                            level_name = level.split("-")[1] 
+                            save = open("levels\\"+ level, "rb")
+                            load_level(save)
+                            text[temp] = [5, 5]
+                            break
                 
                 if len(player) == 1:
                     player = player[0]
@@ -1246,6 +1303,24 @@ def main():
         player.update(platforms+powerups, d_time)
         player.draw()
         
+        to_remove = []
+        for name in text:
+            if text[name][0] > 0:
+                
+                if text[name][0] > 0.4*text[name][1]:
+                    name.set_alpha((1-(text[name][0]/text[name][1]))*425)
+                else:
+                    name.set_alpha(((text[name][0]/text[name][1]))*628)
+                
+                screen.get_surface().blit(name, [(0.5*screen_width) - (name.get_width()/2), (0.5*screen_height) - (name.get_height()/2)])
+                text[name][0] -= d_time
+            
+            else:
+                to_remove.append(name)
+                
+        for i in to_remove:
+            text.pop(i)
+        
             
         screen.flip()
         clock.tick(framerate)
@@ -1253,5 +1328,6 @@ def main():
         current_time = time.time()
         d_time = current_time - previous_time
         previous_time = current_time
+        
 
 menu(True)

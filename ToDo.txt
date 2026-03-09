@@ -6,7 +6,6 @@ Game Mechanics
 
 GUI
     Let player select completed levels from pause screen.
-    Add level names to screen
 
 Levels
     Make more levels
