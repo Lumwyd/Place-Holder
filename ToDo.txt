@@ -1,11 +1,8 @@
 
 Game Mechanics
-    add camera triggers
-        -allow customisation of where and how they shift the screen
     Add Stars
 
 GUI
-    Let player select completed levels from pause screen.
 
 Levels
     Make more levels

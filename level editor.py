@@ -235,7 +235,7 @@ def menu(saveable = False):
     
     load_menu = {"back_tm": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  ")}
     for i in range(save_count):
-        load_menu[saves[i]] = button(screen, 0.25, 0.1, [0.5, 0.3 + (i*0.15)], outer, inner, saves[i])
+        load_menu[saves[i]] = button(screen, 0.25, 0.1, [0.5, 0.3 + (i*0.15)], outer, inner, saves[i].removesuffix(".lvl"))
         
     
     display_menu = {"back_om": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  "),
@@ -446,7 +446,6 @@ def menu(saveable = False):
                                             mods = pg.key.get_mods()
                                     
                                             character = pg.key.name(i)
-                                        
                                             if len(character) == 1:
                                             
                                                 if mods == 1 or mods == 2 or mods == 8192:
@@ -500,6 +499,31 @@ def menu(saveable = False):
                                     
                                         if mods == 1 or mods == 2 or mods == 8192:
                                             character = character.upper()
+                                            
+                                            if mods == 1 or mods == 2 or mods == 8192:
+                                                    character = character.upper()
+                                                    if character == "-":
+                                                        character = "_"
+                                                    elif character == "1":
+                                                        character = "!"
+                                                    elif character == "2":
+                                                        character = "@"
+                                                    elif character == "3":
+                                                        character = "#"
+                                                    elif character == "4":
+                                                        character = "$"
+                                                    elif character == "5":
+                                                        character = "%"
+                                                    elif character == "6":
+                                                        character = "^"
+                                                    elif character == "7":
+                                                        character = "&"
+                                                    elif character == "8":
+                                                        character = "*"
+                                                    elif character == "9":
+                                                        character = "()"
+                                                    elif character == "0":
+                                                        character = ")"
                                         save_name += character
                                         
                                     else:
@@ -728,7 +752,18 @@ class Platform:
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
     def draw(self):
-        pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+        if self.type == 0:
+            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 1:
+            pg.draw.rect(screen.get_surface(), (240, 50, 240), (self.location, (self.width, self.height)))
+        elif self.type == 2:
+            pg.draw.rect(screen.get_surface(), (150, 0, 0), (self.location, (self.width, self.height)))
+        elif self.type == 3:
+            pg.draw.rect(screen.get_surface(), (50, 50, 50), (self.location, (self.width, self.height)))
+        elif self.type == 4:
+            pg.draw.rect(screen.get_surface(), (50, 240, 50), (self.location, (self.width, self.height)))
+        elif self.type == 5:
+            pg.draw.rect(screen.get_surface(), (255, 150, 150), (self.location, (self.width, self.height)))
         
     
 class Player:
@@ -751,6 +786,8 @@ class Player:
         self.dead = False
         self.tags = ""
         self.id = -1
+        self.offset = [0, 0]
+        self.start = [self.location[0], self.location[1]]
         
     def draw(self):
         pg.draw.rect(screen.get_surface(), (220, 255, 220), (self.location, (self.width, self.height)))
@@ -842,8 +879,21 @@ class PowerUp:
         self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
+        self.offset = [0, 0]
+        
     def draw(self):
-        pg.draw.rect(screen.get_surface(), (255, 200, 200), (self.location, (self.width, self.height)))
+        if self.type == 0:
+            pg.draw.rect(screen.get_surface(), (255, 200, 200), (self.location, (self.width, self.height)))
+        elif self.type == 1:
+            pg.draw.rect(screen.get_surface(), (255, 100, 255), (self.location, (self.width, self.height)))
+        elif self.type == 2:
+            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 3:
+            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 4:
+            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+        elif self.type == 5:
+            pg.draw.rect(screen.get_surface(), (255, 255, 200), (self.location, (self.width, self.height)))
       
 platforms = []
 powerups = []
@@ -893,8 +943,11 @@ def main():
                        "type": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.55], outer, inner, "Type: " + str(selected_type), slider = True, slider_max = 5, slider_min = 0, slider_value = selected_type, slider_colour = (147, 107, 15), radius=0),
                        "target": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.65], outer, inner, "Change Target", radius=0)}
         
-        target_menu = {"target_x": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset" + str(selected_width), slider = True, slider_max = 500, slider_min = -500, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
-                       "target_y": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(selected_height), slider = True, slider_max = 500, slider_min = -500, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0)}
+        target_menu = {"target_x": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset" + str(target_x_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
+                       "target_y": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(target_y_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0)}
+        
+        cam_menu = {"target_x": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset" + str(target_x_offset), slider = True, slider_max = 1, slider_min = -1, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
+                       "target_y": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(target_y_offset), slider = True, slider_max = 1, slider_min = -1, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0)}
 
         allow_menu = {"number": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width), menu_position[1]/screen_height], outer, inner, "Number: " + str(allow_amount), slider = True, slider_max = 10, slider_min = 0, slider_value = allow_amount, slider_colour = (147, 107, 15), radius=0)}
     
@@ -903,12 +956,18 @@ def main():
             selected_object.location[0] -= selected_offset[0]
             selected_object.location[1] -= selected_offset[1]
             selected_object.centre = [selected_object.location[0] + selected_object.width/2, selected_object.location[1] + selected_object.height/2]
-            if isinstance(selected_object, Platform) and selected_object.type == 1:
+            if isinstance(selected_object, Platform) or isinstance(selected_object, Player):
                 selected_object.start = [selected_object.location[0], selected_object.location[1]]
+        
+        
         
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 quit()
+                
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_a and pg.key.get_mods() & pg.KMOD_CTRL:
+                    selected_objects = platforms + powerups + player
             
             if event.type == pg.MOUSEBUTTONDOWN:
                 
@@ -944,6 +1003,15 @@ def main():
                     select_start = mouse_position
                     
             if event.type == pg.MOUSEMOTION:
+                new_pos = pg.mouse.get_rel()
+                if pg.mouse.get_pressed()[0] and len(selected_objects) > 1:
+                    for entity in selected_objects:
+                        entity.location[0] += new_pos[0]
+                        entity.location[1] += new_pos[1]
+                        entity.centre = [entity.location[0] + entity.width/2, entity.location[1] + entity.height/2]
+                        if isinstance(entity, Platform) or isinstance(entity, Player):
+                            entity.start = [entity.location[0], entity.location[1]]
+                                
                 for open_menu in open_menus:
                         for item in open_menu:
                             if open_menu[item].get_focused(mouse_position) and (pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]):
@@ -1039,11 +1107,17 @@ def main():
                                         open_menu[item].outer_colour = outer
                                         open_menu[item].inner_colour = inner
                                     
-                                    if temp[1] != None:
+                                    if temp[1] != None and isinstance(selected_objects[0], Platform):
                                         target_x_offset = int(temp[1])
                                         open_menu[item].slider_value = target_x_offset
                                         open_menu[item].text = "X Offset: " + str(int(target_x_offset))
                                         selected_objects[0].offset[0] = target_x_offset
+                                        
+                                    elif temp[1] != None and isinstance(selected_objects[0], PowerUp):
+                                        target_x_offset = temp[1]
+                                        open_menu[item].slider_value = target_x_offset
+                                        open_menu[item].text = "X Offset: " + str(truncate(target_x_offset, 2))
+                                        selected_objects[0].offset[0] = target_x_offset*screen_width
                                         
                                 if item == "target_y" and len(selected_objects) == 1 and selected_object == None:
                                     temp = open_menu[item].get_focused(mouse_position)
@@ -1056,11 +1130,17 @@ def main():
                                         open_menu[item].outer_colour = outer
                                         open_menu[item].inner_colour = inner
                                     
-                                    if temp[1] != None:
+                                    if temp[1] != None and isinstance(selected_objects[0], Platform):
                                         target_y_offset = int(temp[1])
                                         open_menu[item].slider_value = target_y_offset
                                         open_menu[item].text = "Y Offset: " + str(int(target_y_offset))
                                         selected_objects[0].offset[1] = target_y_offset
+                                    
+                                    elif temp[1] != None and isinstance(selected_objects[0], PowerUp):
+                                        target_y_offset = temp[1]
+                                        open_menu[item].slider_value = target_y_offset
+                                        open_menu[item].text = "X Offset: " + str(truncate(target_x_offset, 2))
+                                        selected_objects[0].offset[0] = target_y_offset*screen_height
                                         
                     
             if event.type == pg.MOUSEBUTTONUP:
@@ -1095,7 +1175,7 @@ def main():
                                         
                                     allowed_objects[selected_objects[0]] = allow_amount
                                      
-                                if item == "target" and isinstance(selected_objects[0], Platform) and selected_objects[0].type == 1:   
+                                if item == "target" and isinstance(selected_objects[0], Platform):   
                                     menu_to_remove = None
                                     for temp_menu in open_menus:
                                         if "target_x" in temp_menu:
@@ -1108,6 +1188,20 @@ def main():
                                     target_menu["target_y"].center[0] = open_menu[item].center[0]+0.2
                                     target_menu["target_y"].center[1] = open_menu["allow"].center[1]+0.2
                                     open_menus.append(target_menu)
+                                    
+                                if item == "target" and isinstance(selected_objects[0], PowerUp):   
+                                    menu_to_remove = None
+                                    for temp_menu in open_menus:
+                                        if "target_x" in temp_menu:
+                                            menu_to_remove = temp_menu
+                                            break
+                                    if menu_to_remove != None:
+                                        open_menus.remove(menu_to_remove)
+                                    cam_menu["target_x"].center[0] = open_menu[item].center[0]+0.2
+                                    cam_menu["target_x"].center[1] = open_menu["allow"].center[1]
+                                    cam_menu["target_y"].center[0] = open_menu[item].center[0]+0.2
+                                    cam_menu["target_y"].center[1] = open_menu["allow"].center[1]+0.2
+                                    open_menus.append(cam_menu)
                                                                
                             
                     selected_object = None
@@ -1124,7 +1218,7 @@ def main():
                     
                     select_end = mouse_position
                     selected_objects = []
-                    selected_rect = pg.Rect(select_start[0], select_start[1], abs(select_start[0] - select_end[0]), abs(select_start[1] - select_end[1]))
+                    selected_rect = pg.Rect(min(select_start[0], select_end[0]), min(select_start[1], select_end[1]), abs(select_start[0] - select_end[0]), abs(select_start[1] - select_end[1]))
                     
                     
                     for entity in platforms + powerups + player:

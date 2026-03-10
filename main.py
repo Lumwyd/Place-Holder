@@ -156,12 +156,14 @@ for key in key_bindings:
 def load(save):
     global stars
     global level_number
+    global max_level
     
     data = pickle.load(save)
     
     try:
        stars = data[0]
        level_number = data[1]
+       max_level = data[2]
     except IndexError:
         pass
     
@@ -190,6 +192,13 @@ def menu(saveable = False):
     global framerate
     global framerate_text
     global resolution
+    global platforms
+    global powerups
+    global player
+    global allowed_objects
+    global level_text
+    global level_number
+    global max_level
     
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
@@ -200,11 +209,12 @@ def menu(saveable = False):
     
     if saveable == True:
         if cont == True:
-            title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "Continue"),
-                        "save":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "  Save  "),
-                        "load":button(screen, 0.25, 0.1, [0.5, 0.6], outer, inner, "  Load  "),
-                        "options":button(screen, 0.25, 0.1, [0.5, 0.75], outer, inner, "Options"),
-                        "quit":button(screen, 0.25, 0.1, [0.5, 0.9], outer, inner, "  Quit  ")}
+            title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.15], outer, inner, "Continue"),
+                          "levels":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "  Levels  "),
+                          "save":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "  Save  "),
+                          "load":button(screen, 0.25, 0.1, [0.5, 0.6], outer, inner, "  Load  "),
+                          "options":button(screen, 0.25, 0.1, [0.5, 0.75], outer, inner, "Options"),
+                          "quit":button(screen, 0.25, 0.1, [0.5, 0.9], outer, inner, "  Quit  ")}
         else:
             title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "New Game"),
                         "load":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "  Load  "),
@@ -239,12 +249,22 @@ def menu(saveable = False):
         if file.endswith(".sav"):
             save_count += 1
             saves.append(file)
-    
+            
+    level_count = 0
+    levels = []
+    for file in os.listdir("levels"):
+        if file.endswith(".lvl"):
+            if int(file.split("-")[0]) <= max_level:
+                level_count += 1
+                levels.append(file)
     
     load_menu = {"back_tm": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  ")}
     for i in range(save_count):
-        load_menu[saves[i]] = button(screen, 0.25, 0.1, [0.5, 0.3 + (i*0.15)], outer, inner, saves[i])
+        load_menu[saves[i]] = button(screen, 0.25, 0.1, [0.5, 0.3 + (i*0.15)], outer, inner, saves[i].removesuffix(".sav"))
         
+    level_menu = {"back_tm": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  ")}
+    for i in range(level_count):
+        level_menu[levels[i]] = button(screen, 0.25, 0.1, [0.5, 0.3 + (i*0.15)], outer, inner, levels[i].removesuffix(".lvl"))
     
     display_menu = {"back_om": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  "),
                     "fullscreen": button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "Fullscreen: " + str(fullscreen)),
@@ -278,6 +298,26 @@ def menu(saveable = False):
                     for it in current_menu:
                         current_menu[it].center[1] += 0.025
                     current_menu["back_om"].center[1] -= 0.025
+            
+            elif current_menu == load_menu:
+                if event.y == -1:
+                    for it in current_menu:
+                        current_menu[it].center[1] -= 0.025
+                    current_menu["back_tm"].center[1] += 0.025
+                elif event.y == 1:
+                    for it in current_menu:
+                        current_menu[it].center[1] += 0.025
+                    current_menu["back_tm"].center[1] -= 0.025
+            elif current_menu == level_menu:
+                if event.y == -1:
+                    for it in current_menu:
+                        current_menu[it].center[1] -= 0.025
+                    current_menu["back_tm"].center[1] += 0.025
+                elif event.y == 1:
+                    for it in current_menu:
+                        current_menu[it].center[1] += 0.025
+                    current_menu["back_tm"].center[1] -= 0.025
+                
         
         for item in current_menu:
             mouse_pos = pg.mouse.get_pos()
@@ -289,7 +329,7 @@ def menu(saveable = False):
             
             
             for event in pg.event.get(pg.QUIT):
-                quit()
+                sys.exit(0)
                 
             if pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]:
                 for event in events:
@@ -305,7 +345,7 @@ def menu(saveable = False):
                                 end = True
 
                         elif item == "quit":
-                            quit()
+                            sys.exit(0)
                             
                         elif item == "options":
                             current_menu = options_menu
@@ -314,6 +354,10 @@ def menu(saveable = False):
                         elif item == "load":
                             changed_menu = True
                             current_menu = load_menu
+                            
+                        elif item == "levels":
+                            changed_menu = True
+                            current_menu = level_menu
                             
                         elif item == "back_tm":
                             current_menu = title_menu
@@ -392,6 +436,21 @@ def menu(saveable = False):
                             save = open("saves\\"+item, "rb")
                             load(save)
                             main()
+                            
+                        elif item in level_menu and not item == "back_tm":
+                            save = open("levels\\"+item, "rb")
+                            load_level(save)
+                            if player != []:
+                                player = player[0]
+                            
+                            level_number, level_name = level_menu[item].text.split("-")
+                            level_number = int(level_number)
+                            
+                            font = pg.font.SysFont("Comic Sans", 50)
+                            temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
+                            level_text = {}
+                            level_text[temp] = [5, 5]
+                            main()
                               
                         elif item == "save":
                             done = False
@@ -437,7 +496,7 @@ def menu(saveable = False):
                                 screen.flip() 
                                 
                                 for event in pg.event.get(pg.QUIT):
-                                    quit()
+                                    sys.exit(0)
                                 
                                 # Handling keyboard input
                                 
@@ -508,6 +567,32 @@ def menu(saveable = False):
                                     
                                         if mods == 1 or mods == 2 or mods == 8192:
                                             character = character.upper()
+                                            
+                                            if mods == 1 or mods == 2 or mods == 8192:
+                                                    character = character.upper()
+                                                    if character == "-":
+                                                        character = "_"
+                                                    elif character == "1":
+                                                        character = "!"
+                                                    elif character == "2":
+                                                        character = "@"
+                                                    elif character == "3":
+                                                        character = "#"
+                                                    elif character == "4":
+                                                        character = "$"
+                                                    elif character == "5":
+                                                        character = "%"
+                                                    elif character == "6":
+                                                        character = "^"
+                                                    elif character == "7":
+                                                        character = "&"
+                                                    elif character == "8":
+                                                        character = "*"
+                                                    elif character == "9":
+                                                        character = "()"
+                                                    elif character == "0":
+                                                        character = ")"
+                                                        
                                         save_name += character
                                         
                                     else:
@@ -527,7 +612,7 @@ def menu(saveable = False):
                                         if len(save_name) >=1:
                                             save = open("saves\\"+save_name+".sav", "wb")
                                             
-                                            data = [stars, level]
+                                            data = [stars, level_number, max_level]
                                             
                                             pickle.dump(data, save)
                                             
@@ -792,6 +877,9 @@ class Platform:
             for passenger in self.passengers:
                 passenger.location[0] += x_diff*d_time/10
                 passenger.location[1] += y_diff*d_time/10
+                passenger.centre = [passenger.location[0] + passenger.width/2, passenger.location[1] + passenger.height/2]
+                if isinstance(passenger, Platform) or isinstance(passenger, Player):
+                    passenger.start = [passenger.location[0], passenger.location[1]]
             
             self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
             
@@ -832,6 +920,8 @@ class Player:
         self.dead = False
         self.tags = ""
         self.id = -1
+        self.offset = [0, 0]
+        self.start = [self.location[0], self.location[1]]
         
     def draw(self, surface = screen.get_surface()):
         pg.draw.rect(surface, (220, 255, 220), (self.location, (self.width, self.height)))
@@ -852,16 +942,21 @@ class Player:
         global allowed_objects
         global level_number
         global level_name
-        global text
+        global level_text
+        global stars
+        global max_level
+        
         self.cayote_timer += d_time
         
         
         if self.dash_timer >= 0:
+            self.crouched = True
             self.dash_timer += d_time
         else:
             self.speed[1] += 0.1
             
         if self.dash_timer >= 0.17:
+            self.crouched = True
             self.speed[1] += 0.1
             self.dash_speed[0] *= 0.8
             self.dash_speed[1] *= 0.8
@@ -871,10 +966,17 @@ class Player:
             if vector_magnitude(self.dash_speed) == 0:
                 self.dash_timer = -1
                 
-        self.location[0] += self.speed[0]
-        self.location[1] += self.speed[1]
-        self.location[0] += self.dash_speed[0]
-        self.location[1] += self.dash_speed[1]
+        flow_speed = [self.speed[0] + self.dash_speed[0], min(self.speed[1], 0) + self.dash_speed[1]]
+        
+        if vector_magnitude(flow_speed) > 0:
+            self.flow_mult += self.flow_mult*0.02*d_time
+        else:
+            self.flow_mult = 1
+                
+        self.location[0] += self.speed[0]*self.flow_mult
+        self.location[1] += self.speed[1]*self.flow_mult
+        self.location[0] += self.dash_speed[0]*self.flow_mult
+        self.location[1] += self.dash_speed[1]*self.flow_mult
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         
         if self.cayote_timer >= 0.204:
@@ -896,6 +998,7 @@ class Player:
                         entity.passengers.remove(self)
             except:
                 pass
+            
             if self.collide(entity) and not "-no_collide-" in entity.tags and not "-no_collide-" in self.tags:
                 if isinstance(entity, Platform):
                     
@@ -914,11 +1017,10 @@ class Player:
 
                     else:
                         if y_diff < 0:
-                            self.location[1] -= (entity.height/2 + self.height/2) - abs(y_diff)
+                            self.location[1] -= (entity.height/2 + self.height/2 - 1) - abs(y_diff)
                             self.on_ground = True
                             if not self in entity.passengers:
                                 entity.passengers.append(self)
-                                
                             self.cayote_timer = 0
                             self.speed[1] = 0
                         else:
@@ -927,7 +1029,8 @@ class Player:
                     if entity.type == 2:
                         self.dead = True
                     if entity.type == 5:
-                        level += 1
+                        level_number += 1
+                        max_level = max(level_number, max_level)
                         for levels in os.walk("levels"):
                             for level in levels[2]:
                                 if level.split("-")[0] == str(level_number):
@@ -935,21 +1038,66 @@ class Player:
                                     level_name = level.split("-")[1].removesuffix(".lvl")
                                     save = open("levels\\"+ level, "rb")
                                     load_level(save)
-                                    text[temp] = [5, 5]
+                                    if player != []:
+                                        player = player[0]
+                                    
+                                    font = pg.font.SysFont("Comic Sans", 50)
+                                    temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
+                                    level_text = {}
+                                    level_text[temp] = [5, 5]
                                     break
+                        
                             
                 elif isinstance(entity, PowerUp):
-                    if entity.type == 0:
+                    if entity.type == 0: #Jump Crystal
                         self.jump_enabled = True
                         self.jump_allowed = True
+                        self.on_ground = True
+                        self.cayote_timer = 0
                         powerups.remove(entity)
-                    elif entity.type == 1:
+                    elif entity.type == 1: #Dash Crystal
                         self.max_dashes += 1
                         self.dashes = self.max_dashes  
                         powerups.remove(entity)   
-                    elif entity.type == 5:
+                    elif entity.type == 5: # Stars
                         stars[level] = True  
-                        powerups.remove(entity)    
+                        powerups.remove(entity)  
+                    elif entity.type == 4: # Cam Trigger
+                        if self.offset == [0, 0]:
+                            self.offset[0], self.offset[1] = [entity.offset[0], entity.offset[1]]
+                            entity.offset[0] *= -1
+                            entity.offset[1] *= -1
+                        
+        if self.offset != [0, 0]:
+            destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
+            
+            x_diff = destination[0] - self.start[0]
+            y_diff = destination[1] - self.start[1]
+            
+            self.location[0] -= x_diff*d_time*10
+            self.location[1] -= y_diff*d_time*10
+            self.offset[0] -= x_diff*d_time*10
+            self.offset[1] -= y_diff*d_time*10
+            self.start[0] -= x_diff*d_time*10
+            self.start[1] -= y_diff*d_time*10
+            
+            self.offset[0] = truncate(self.offset[0], 2)
+            self.offset[1] = truncate(self.offset[1], 2)
+            
+            for entity in entity_list:
+                entity.location[0] -= x_diff*d_time*10
+                entity.location[1] -= y_diff*d_time*10
+                entity.centre = [entity.location[0] + entity.width/2, entity.location[1] + entity.height/2]
+                if isinstance(entity, Platform):
+                    entity.start[0] -= x_diff*d_time*10
+                    entity.start[1] -= y_diff*d_time*10
+            
+            self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
+            
+            
+          
+        else:
+            self.start = [self.location[0], self.location[1]]
                     
         if self.on_ground:
             if self.dash_timer == -1:
@@ -972,6 +1120,9 @@ class PowerUp:
         self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
+        self.offset = [0, 0]
+        
+        
     def draw(self, surface = screen.get_surface()):
         if self.type == 0:
             pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
@@ -982,15 +1133,17 @@ class PowerUp:
         elif self.type == 3:
             pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
         elif self.type == 4:
-            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+            pass
         elif self.type == 5:
             pg.draw.rect(surface, (255, 255, 200), (self.location, (self.width, self.height)))
         
        
 global level_number
 global stars
+global max_level
 
-level_number = 2
+level_number = 1
+max_level = level_number
 stars = {}
 
 global platforms
@@ -1009,7 +1162,7 @@ def main():
     global powerups
     global player
     global allowed_objects
-    global text
+    global level_text
     
     for levels in os.walk("levels"):
         for level in levels[2]:
@@ -1041,8 +1194,8 @@ def main():
     font = pg.font.SysFont("Comic Sans", 50)
     temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
     
-    text = {}
-    text[temp] = [5, 5]
+    level_text = {}
+    level_text[temp] = [5, 5]
     
     while True:       
         mouse_position = pg.mouse.get_pos()
@@ -1063,7 +1216,6 @@ def main():
             allowed_images[temp_surface] = thing
             
         start_x = 20
-        start_y = 20
         i = 0
         for image in allowed_images:
                 
@@ -1077,7 +1229,7 @@ def main():
         
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                quit()
+                sys.exit(0)
             if event.type == pg.MOUSEBUTTONDOWN:
                 for thing in platforms + powerups + [player]:
                     temp_rect = pg.Rect(thing.location, [thing.width, thing.height])
@@ -1202,7 +1354,9 @@ def main():
                 
                 if pg.key.get_pressed()[key_bindings["jump"]]:
                     direction[1] -= 1
+                if pg.key.get_just_pressed()[key_bindings["jump"]]:
                     if player.jump_enabled and player.jump_allowed:
+                        player.speed[1] = min(player.speed[1], 0)
                         player.speed[1] -= 4*d_time*60
                         player.jump_allowed = False
                         player.on_ground = False
@@ -1210,7 +1364,9 @@ def main():
             except:
                 if pg.mouse.get_pressed()[int(key_bindings["jump"][-1])]:
                     direction[1] -= 1
+                if pg.mouse.get_just_pressed()[int(key_bindings["jump"][-1])]:
                     if player.jump_enabled and player.jump_allowed:
+                        player.speed[1] = min(player.speed[1], 0)
                         player.speed[1] -= 4*d_time*60
                         player.jump_allowed = False
                         player.on_ground = False
@@ -1263,7 +1419,7 @@ def main():
                             level_name = level.split("-")[1] 
                             save = open("levels\\"+ level, "rb")
                             load_level(save)
-                            text[temp] = [5, 5]
+                            level_text[temp] = [5, 5]
                             break
                 
                 if len(player) == 1:
@@ -1278,18 +1434,28 @@ def main():
                             level_name = level.split("-")[1] 
                             save = open("levels\\"+ level, "rb")
                             load_level(save)
-                            text[temp] = [5, 5]
+                            level_text[temp] = [5, 5]
                             break
                 
                 if len(player) == 1:
                     player = player[0]
+              
+        try:
+            if pg.key.get_just_pressed()[key_bindings["menu"]]:
+                menu(True)
+                    
+        except TypeError:
+            if isinstance(key_bindings["menu"], str):
+                if pg.mouse.get_just_pressed()[int(key_bindings["menu"][-1])]:
+                    menu(True)
+                
                             
         if selected_object != None:
             selected_object.location = [mouse_position[0], mouse_position[1]]
             selected_object.location[0] -= selected_offset[0]
             selected_object.location[1] -= selected_offset[1]
             selected_object.centre = [selected_object.location[0] + selected_object.width/2, selected_object.location[1] + selected_object.height/2]
-            if isinstance(selected_object, Platform) and selected_object.type == 1:
+            if isinstance(selected_object, Platform) or isinstance(selected_object, Player):
                 selected_object.start = [selected_object.location[0], selected_object.location[1]]
                     
         for platform in platforms:
@@ -1304,22 +1470,22 @@ def main():
         player.draw()
         
         to_remove = []
-        for name in text:
-            if text[name][0] > 0:
+        for name in level_text:
+            if level_text[name][0] > 0:
                 
-                if text[name][0] > 0.4*text[name][1]:
-                    name.set_alpha((1-(text[name][0]/text[name][1]))*425)
+                if level_text[name][0] > 0.4*level_text[name][1]:
+                    name.set_alpha((1-(level_text[name][0]/level_text[name][1]))*425)
                 else:
-                    name.set_alpha(((text[name][0]/text[name][1]))*628)
+                    name.set_alpha(((level_text[name][0]/level_text[name][1]))*628)
                 
                 screen.get_surface().blit(name, [(0.5*screen_width) - (name.get_width()/2), (0.5*screen_height) - (name.get_height()/2)])
-                text[name][0] -= d_time
+                level_text[name][0] -= d_time
             
             else:
                 to_remove.append(name)
                 
         for i in to_remove:
-            text.pop(i)
+            level_text.pop(i)
         
             
         screen.flip()
