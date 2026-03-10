@@ -1,11 +1,19 @@
 
 Game Mechanics
-    Add Stars
+    -Prompt resetting
 
 GUI
 
 Levels
-    Make more levels
+    Teach jump
+    Teach Dash + Placement
+    Use jump + dash
+    Use Platform cycling
+    Make player place self at end
+    Use flow mult
+    Use jump extend
+    Double Jump
+    Dash stacking
 
 Art
     Texture Player

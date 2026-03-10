@@ -1,6 +1,6 @@
-fullscreen:0
+fullscreen:1
 framerate:60
-resolution:1360X770
+resolution:1920X1080
 
 Keybinds
 

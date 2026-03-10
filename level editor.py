@@ -270,6 +270,16 @@ def menu(saveable = False):
                     for it in current_menu:
                         current_menu[it].center[1] += 0.025
                     current_menu["back_om"].center[1] -= 0.025
+                    
+            if current_menu == load_menu:
+                if event.y == -1:
+                    for it in current_menu:
+                        current_menu[it].center[1] -= 0.025
+                    current_menu["back_tm"].center[1] += 0.025
+                elif event.y == 1:
+                    for it in current_menu:
+                        current_menu[it].center[1] += 0.025
+                    current_menu["back_tm"].center[1] -= 0.025
         
         for item in current_menu:
             mouse_pos = pg.mouse.get_pos()
@@ -1139,8 +1149,8 @@ def main():
                                     elif temp[1] != None and isinstance(selected_objects[0], PowerUp):
                                         target_y_offset = temp[1]
                                         open_menu[item].slider_value = target_y_offset
-                                        open_menu[item].text = "X Offset: " + str(truncate(target_x_offset, 2))
-                                        selected_objects[0].offset[0] = target_y_offset*screen_height
+                                        open_menu[item].text = "Y Offset: " + str(truncate(target_y_offset, 2))
+                                        selected_objects[0].offset[1] = target_y_offset*screen_height
                                         
                     
             if event.type == pg.MOUSEBUTTONUP:
