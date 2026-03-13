@@ -1,6 +1,7 @@
 
 Game Mechanics
-    -Prompt resetting
+    -Add in fog
+
 
 GUI
 
@@ -14,6 +15,7 @@ Levels
     Use jump extend
     Double Jump
     Dash stacking
+    Use Moving platforms
 
 Art
     Texture Player

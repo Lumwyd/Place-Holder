@@ -6,6 +6,7 @@ import pygame as pg
 from pygame._sdl2.video import Window
 from random import *
 from C_librarianthefirstsecondandlast import *
+from copy import *
 
 pg.init()
 
@@ -553,9 +554,14 @@ def menu(saveable = False):
                                         if len(save_name) >=1:
                                             save = open("levels\\"+save_name+".lvl", "wb")
                                             
+                                            to_remove = []
                                             for thing in allowed_objects.keys():
+                                                
                                                 if allowed_objects[thing] == 0:
-                                                    allowed_objects.pop(thing)
+                                                    to_remove.append(thing)
+                                            
+                                            for thing in to_remove:
+                                                allowed_objects.pop(thing)
                                             
                                             data = [platforms, powerups, player, allowed_objects]
                                             
@@ -899,9 +905,13 @@ class PowerUp:
         elif self.type == 2:
             pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
         elif self.type == 3:
-            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+            temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
+            pg.draw.rect(temp, (240, 150, 150, 100), ([0, 0], (self.width, self.height)))
+            screen.get_surface().blit(temp, self.location)
         elif self.type == 4:
-            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
+            temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
+            pg.draw.rect(temp, (240, 240, 240, 100), ([0, 0], (self.width, self.height)))
+            screen.get_surface().blit(temp, self.location)
         elif self.type == 5:
             pg.draw.rect(screen.get_surface(), (255, 255, 200), (self.location, (self.width, self.height)))
       
@@ -978,6 +988,33 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_a and pg.key.get_mods() & pg.KMOD_CTRL:
                     selected_objects = platforms + powerups + player
+                if event.key == pg.K_c and pg.key.get_mods() & pg.KMOD_CTRL:
+                    new_objects = []
+                    for entity in selected_objects:
+                        if isinstance(entity, Player):
+                            continue
+                        temp = deepcopy(entity)
+                        temp.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
+                        new_objects.append(temp)
+                        
+                    for entity in new_objects:
+                        if isinstance(entity, Platform):
+                            platforms.append(entity)
+                            
+                        elif isinstance(entity, PowerUp):
+                            powerups.append(entity)
+                            
+                    selected_objects = new_objects
+                    
+                if event.key == pg.K_DELETE:
+                    for entity in selected_objects:
+                        if isinstance(entity, Player):
+                            player.remove(entity)
+                        if isinstance(entity, Platform):
+                            platforms.remove(entity)
+                        if isinstance(entity, PowerUp):
+                            powerups.remove(entity)
+                        
             
             if event.type == pg.MOUSEBUTTONDOWN:
                 
@@ -1250,6 +1287,8 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == key_bindings["menu"]:
                     menu(True)       
+                if event.key == key_bindings["reset"]:
+                    open_menus = [place_menu]
                     
                             
         screen.get_surface().fill((25, 25, 75))

@@ -157,6 +157,7 @@ def load(save):
     global stars
     global level_number
     global max_level
+    global level_stars
     
     data = pickle.load(save)
     
@@ -164,6 +165,7 @@ def load(save):
        stars = data[0]
        level_number = data[1]
        max_level = data[2]
+       level_stars = data[3]
     except IndexError:
         pass
     
@@ -199,6 +201,7 @@ def menu(saveable = False):
     global level_text
     global level_number
     global max_level
+    global level_stars
     
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
@@ -242,7 +245,7 @@ def menu(saveable = False):
     key_menu = {"back_om": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  ")}
     key_count = 0
     for key in key_bindings:
-        key_menu[key] = button(screen, 0.25, 0.1, [0.5, 0.3 + key_count*0.15], outer, inner, " "+key.capitalize()+": "+key_names[key].capitalize()+" ")
+        key_menu[key] = button(screen, 0.25, 0.1, [0.5, 0.3 + key_count*0.15], outer, inner, " "+key.title()+": "+key_names[key].title()+" ")
         key_count += 1
     
     
@@ -407,16 +410,16 @@ def menu(saveable = False):
                             if mouse_button != None:
                                 key_bindings[item] = "mouse_button-"+str(mouse_button)
                                 if mouse_button == 0:
-                                    current_menu[item].text = " " + item.capitalize() + ": " + "Left Click" + " "
+                                    current_menu[item].text = " " + item.title() + ": " + "Left Click" + " "
                                 elif mouse_button == 1:
-                                    current_menu[item].text = " " + item.capitalize() + ": " + "Middle Click" + " "
+                                    current_menu[item].text = " " + item.title() + ": " + "Middle Click" + " "
                                 elif mouse_button == 2:
-                                    current_menu[item].text = " " + item.capitalize() + ": " + "Right Click" + " "
+                                    current_menu[item].text = " " + item.title() + ": " + "Right Click" + " "
                                 else:
-                                    current_menu[item].text = " " + item.capitalize() + ": " + "mouse button "+str(mouse_button) + " "
+                                    current_menu[item].text = " " + item.title() + ": " + "mouse button "+str(mouse_button) + " "
                             else:
                                 key_bindings[item] = key
-                                current_menu[item].text = " " + item.capitalize() + ": " + pg.key.name(key).capitalize() + " "
+                                current_menu[item].text = " " + item.title() + ": " + pg.key.name(key).title() + " "
                             
                             options = open("options.txt", "r")
                             prev_options = options.readlines()
@@ -460,8 +463,9 @@ def menu(saveable = False):
                                             break
                                     to_remove = None
                                     for entity in allowed_objects:
-                                        if entity.type == 5:
-                                            to_remove = entity
+                                        if isinstance(entity, PowerUp):
+                                            if entity.type == 5:
+                                                to_remove = entity
                                     if to_remove != None:
                                         allowed_objects.pop(to_remove)
                             
@@ -637,7 +641,7 @@ def menu(saveable = False):
                                         if len(save_name) >=1:
                                             save = open("saves\\"+save_name+".sav", "wb")
                                             
-                                            data = [stars, level_number, max_level]
+                                            data = [stars, level_number, max_level, level_stars]
                                             
                                             pickle.dump(data, save)
                                             
@@ -681,9 +685,9 @@ def menu(saveable = False):
                                 moniter_width, moniter_height = temp.current_w, temp.current_h
                                 
                                 screen_width, screen_height = int(resolution.split("X")[0]),int(resolution.split("X")[1])
-                                
-                                screen_width, screen_height = screen_width/1.5, screen_height/1.5
-                                
+                                screen_width /= 1.5
+                                screen_height /= 1.5
+                                                                
                                 screen.size = [screen_width, screen_height]
                                 screen.position = ((moniter_width/2) - (screen_width/2), (moniter_height/2) - (screen_height/2))
                             else: 
@@ -693,8 +697,12 @@ def menu(saveable = False):
                                 
                                 screen.size = [moniter_width, moniter_height]
                                 screen.position = (0, 0)
-                                screen_height = screen_height
-                                screen_width = screen_width
+                                screen_height = moniter_height
+                                screen_width = moniter_width
+                                new_resolution = str(int(screen_width*1.5)) + "X" + str(int(screen_height*1.5))
+                                resolution = new_resolution
+                                
+                                current_menu["resolution"] = button(screen, 0.25, 0.1, [0.5, 0.70], outer, inner, "Resolution: " + resolution)
                                 
                             for line in prev_options:
                                 if ":" in line:
@@ -717,6 +725,9 @@ def menu(saveable = False):
                             prev_options = options.readlines()
                             options.close()
                             
+                            fullscreen = False
+                            current_menu["fullscreen"] =button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "Fullscreen: " + str(fullscreen))
+                            
                             line_number = 0
                             new_line = ""
                             
@@ -733,6 +744,7 @@ def menu(saveable = False):
                             text = new_resolution
                             resolution = new_resolution
                             screen_width, screen_height = int(text.split("X")[0]),int(text.split("X")[1])
+                            
                             
                             screen_width, screen_height = screen_width/1.5, screen_height/1.5
                             
@@ -993,6 +1005,7 @@ class Player:
         global level_text
         global stars
         global max_level
+        global level_stars
         
         self.cayote_timer += d_time
         
@@ -1001,11 +1014,12 @@ class Player:
             self.crouched = True
             self.dash_timer += d_time
         else:
-            self.speed[1] += 0.1
+            self.speed[1] += 0.1*d_time*60
             
         if self.dash_timer >= 0.17:
             self.crouched = True
-            self.speed[1] += 0.1
+            self.speed[1] += 0.1*d_time*60
+            
             self.dash_speed[0] *= 0.8
             self.dash_speed[1] *= 0.8
             self.dash_speed[0] = truncate(self.dash_speed[0], 1)
@@ -1017,29 +1031,23 @@ class Player:
         flow_speed = [self.speed[0] + self.dash_speed[0], min(self.speed[1], 0) + self.dash_speed[1]]
         
         if vector_magnitude(flow_speed) > 0:
-            self.flow_mult += self.flow_mult*0.02*d_time
+            self.flow_mult += self.flow_mult*0.035*d_time
         else:
             self.flow_mult = 1
                 
-        self.location[0] += self.speed[0]*self.flow_mult
-        self.location[1] += self.speed[1]*self.flow_mult
-        self.location[0] += self.dash_speed[0]*self.flow_mult
-        self.location[1] += self.dash_speed[1]*self.flow_mult
+        self.location[0] += self.speed[0]*self.flow_mult*d_time*60
+        self.location[1] += self.speed[1]*self.flow_mult*d_time*60
+        self.location[0] += self.dash_speed[0]*self.flow_mult*d_time*60
+        self.location[1] += self.dash_speed[1]*self.flow_mult*d_time*60
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         
         if self.cayote_timer >= 0.204:
             self.on_ground = False
             self.cayote_timer = 0
             
-        if self.crouched == True:
-            if self.height == 55:
-                if self.on_ground:
-                    self.location[1] += 15
-                
-                self.height = 40
-        else:
-            self.height = 55
         
+        Top_collide = False
+        Bottom_collide = False
         for entity in entity_list:
             try:
                 if self in entity.passengers:
@@ -1065,13 +1073,23 @@ class Player:
 
                     else:
                         if y_diff < 0:
-                            self.location[1] -= (entity.height/2 + self.height/2 - 1) - abs(y_diff)
                             self.on_ground = True
+                            Bottom_collide = True
                             if not self in entity.passengers:
                                 entity.passengers.append(self)
                             self.cayote_timer = 0
                             self.speed[1] = 0
+                            
+                            if Bottom_collide == Top_collide == True:
+                                self.dead = True
+                            self.location[1] -= (entity.height/2 + self.height/2 - 1) - abs(y_diff)
+                            
+                            
                         else:
+                            Top_collide = True
+                            if Bottom_collide == Top_collide == True:
+                                self.dead = True
+                                
                             self.location[1] += (entity.height/2 + self.height/2) - abs(y_diff)
                     
                     if entity.type == 2:
@@ -1095,8 +1113,9 @@ class Player:
                                                     break
                                             to_remove = None
                                             for entity in allowed_objects:
-                                                if entity.type == 5:
-                                                    to_remove = entity
+                                                if isinstance(entity, PowerUp):
+                                                    if entity.type == 5:
+                                                        to_remove = entity
                                             if to_remove != None:
                                                 allowed_objects.pop(to_remove)
                                                         
@@ -1123,7 +1142,14 @@ class Player:
                         powerups.remove(entity)   
                     elif entity.type == 5: # Stars
                         stars[level_number] = True  
-                        powerups.remove(entity)  
+                        powerups.remove(entity) 
+                        # of the form: location, size, rotation 
+                        level_stars[level_number] = {"location":[randint(60, 1250), randint(60, 690)],
+                                                     "size":randint(10, 20), 
+                                                     "angle":randint(0, 359),
+                                                     "direction": randint(0, 1),
+                                                     "speed": randint(1, 10)/100,
+                                                     "growth_phase": randint(0, 1)}
                     elif entity.type == 4: # Cam Trigger
                         if self.offset == [0, 0]:
                             self.offset[0], self.offset[1] = [entity.offset[0], entity.offset[1]]
@@ -1167,10 +1193,20 @@ class Player:
             self.jump_allowed = True
         else:
             self.jump_allowed = False
+        
+        if self.crouched == True:
+            if self.height == 55:
+                if self.on_ground:
+                    self.location[1] += 15
+                
+                self.height = 40
+        else:
+            self.height = 55
             
         if self.dead:
             self.height = 30
             self.width = 55
+ 
  
 class PowerUp:
     def __init__(self, location, type):
@@ -1193,7 +1229,9 @@ class PowerUp:
         elif self.type == 2:
             pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
         elif self.type == 3:
-            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+            temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
+            pg.draw.rect(temp, (240, 150, 150, 100), ([0, 0], (self.width, self.height)))
+            surface.blit(temp, self.location)
         elif self.type == 4:
             pass
         elif self.type == 5:
@@ -1203,10 +1241,12 @@ class PowerUp:
 global level_number
 global stars
 global max_level
+global level_stars
 
 level_number = 1
 max_level = level_number
 stars = {}
+level_stars = {}
 
 global platforms
 global powerups
@@ -1217,6 +1257,7 @@ platforms = []
 powerups = []
 player = []
 allowed_objects = {}
+
  
 def main(): 
     
@@ -1241,8 +1282,9 @@ def main():
                                 break
                         to_remove = None
                         for entity in allowed_objects:
-                            if entity.type == 5:
-                                to_remove = entity
+                            if isinstance(entity, PowerUp):
+                                if entity.type == 5:
+                                    to_remove = entity
                         if to_remove != None:
                             allowed_objects.pop(to_remove)
                 break
@@ -1261,7 +1303,6 @@ def main():
     current_time = time.time()
     global d_time
     d_time = 0.018
-    direction = [0, 0]
     
     selected_offset = [0, 0]
     selected_object = None
@@ -1271,12 +1312,33 @@ def main():
     
     level_text = {}
     level_text[temp] = [5, 5]
-    
-    while True:       
-        mouse_position = pg.mouse.get_pos()
+        
+    while True:  
+        direction = [0, 0]
+        pre_scaled = pg.Surface([1280, 720])  
+           
+        mouse_position = list(pg.mouse.get_pos())
+        # # mouse_position[0] *= 1.5
+        # # mouse_position[1] *= 1.5
+        
+        # # Scaling mouse position
+        center = [(screen_width)//2, (screen_height)//2]
+        ratio = min(screen_width/1280, screen_height/720)
+        scaled_width = int(1280 * ratio)
+        scaled_height = int(720 * ratio)
+        
+        mouse_position[0] -= center[0] - scaled_width/2
+        mouse_position[1] -= center[1] - scaled_height/2
+                
+        
+        
+        mouse_position[0] /= truncate(ratio, 5)
+        mouse_position[1] /= truncate(ratio, 5)
+        
+        
         direction = [0, 0]
         frame += 1
-        screen.get_surface().fill((25, 25, 75))
+        pre_scaled.fill((25, 25, 75))
         
         allowed_images = {}
         for thing in allowed_objects:
@@ -1295,11 +1357,11 @@ def main():
         for image in allowed_images:
                 
             center = image.get_height()/2
-            screen.get_surface().blit(image, [start_x + (100 * i), 50 - center])
+            pre_scaled.blit(image, [start_x + (100 * i), 50 - center])
             font = pg.font.SysFont("Comic Sans", 20)
             number = allowed_objects[allowed_images[image]]
             number = font.render(str(number), True, (180, 200, 180))
-            screen.get_surface().blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
+            pre_scaled.blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
             i += 1
         
         for event in pg.event.get():
@@ -1367,6 +1429,25 @@ def main():
                                     powerups.remove(selected_object)
                 
                         i += 1
+                    
+                    for power_up in powerups:
+                        if power_up.type == 3 and selected_object != None:
+                            selected_rect = pg.Rect(selected_object.location, [selected_object.width, selected_object.height])
+                            illegal_rect = pg.Rect(power_up.location, [power_up.width, power_up.height])
+                            
+                            if selected_rect.colliderect(illegal_rect):
+                                for image in allowed_images:
+                                    
+                                    if allowed_images[image].id == selected_object.id:
+                                        allowed_objects[allowed_images[image]] += 1
+                                        
+                                        if isinstance(selected_object, Player):
+                                            player = []
+                                        elif isinstance(selected_object, Platform):
+                                            platforms.remove(selected_object)
+                                        elif isinstance(selected_object, PowerUp):
+                                            powerups.remove(selected_object)
+                
                 if selected_object != None:
                     selected_object.tags = selected_object.tags.replace("-no_collide-", "")
                 selected_object = None
@@ -1374,59 +1455,76 @@ def main():
             if player.dead == False and not player == selected_object:
                 try:
                     if pg.key.get_pressed()[key_bindings["left"]]:
-                        direction[0] -=1
+                        if direction[0] == 1:
+                            direction[0] -=2
+                            player.flow_mult = 1
+                        else:
+                            direction[0] -=1
                         try:
                             if held_keys[key_bindings["left"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = -3*d_time*60
+                                player.speed[0] = -3
                                 
                         except KeyError:
-                            player.speed[0] = -3*d_time*60
+                            player.speed[0] = -3
                         
                         held_keys[key_bindings["left"]] = frame
                 except TypeError:
                     if pg.mouse.get_pressed()[int(key_bindings["left"][-1])]:
-                        direction[0] -=1
+                        if direction[0] == 1:
+                            direction[0] -=2
+                            player.flow_mult = 1
+                        else:
+                            direction[0] -=1
                         try:
                             if held_keys[key_bindings["left"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = -3*d_time*60
+                                player.speed[0] = -3
                                 
                         except KeyError:
-                            player.speed[0] = -3*d_time*60
+                            player.speed[0] = -3
                         
                         held_keys[key_bindings["left"]] = frame
                                             
                 
                 try:    
                     if pg.key.get_pressed()[key_bindings["right"]]:
+                        if direction[0] == -1:
+                            direction[0] +=2
+                            player.flow_mult = 1
+                        else:
+                            direction[0] +=1
                         direction[0] += 1
                         try:
                             if held_keys[key_bindings["right"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = 3*d_time*60
+                                player.speed[0] = 3
                                 
                         except KeyError:
-                            player.speed[0] = 3*d_time*60
+                            player.speed[0] = 3
                         
                         held_keys[key_bindings["right"]] = frame
                 except TypeError:
                     if pg.mouse.get_pressed()[int(key_bindings["right"][-1])]:
-                        direction[0] += 1
+                        if direction[0] == -1:
+                            direction[0] +=2
+                            player.flow_mult = 1
+                        else:
+                            direction[0] +=1
                         try:
                             if held_keys[key_bindings["right"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = 3*d_time*60
+                                player.speed[0] = 3
                                 
                         except KeyError:
-                            player.speed[0] = 3*d_time*60
+                            player.speed[0] = 3
                         
                         held_keys[key_bindings["right"]] = frame
-                if direction[0] == 0:
+                if direction == [0, 0]:
                     player.speed[0] = 0
                 
                 try:
@@ -1436,7 +1534,7 @@ def main():
                     if pg.key.get_just_pressed()[key_bindings["jump"]]:
                         if player.jump_enabled and player.jump_allowed:
                             player.speed[1] = min(player.speed[1], 0)
-                            player.speed[1] -= 4*d_time*60
+                            player.speed[1] -= 4
                             player.jump_allowed = False
                             player.on_ground = False
                             player.cayote_timer = 0
@@ -1446,7 +1544,7 @@ def main():
                     if pg.mouse.get_just_pressed()[int(key_bindings["jump"][-1])]:
                         if player.jump_enabled and player.jump_allowed:
                             player.speed[1] = min(player.speed[1], 0)
-                            player.speed[1] -= 4*d_time*60
+                            player.speed[1] -= 4
                             player.jump_allowed = False
                             player.on_ground = False
                             player.cayote_timer = 0
@@ -1475,8 +1573,8 @@ def main():
                             
                             direction = normalise(direction)
                             
-                            player.dash_speed[0] += 10*direction[0]*d_time*60
-                            player.dash_speed[1] += 10*direction[1]*d_time*60
+                            player.dash_speed[0] += 10*direction[0]
+                            player.dash_speed[1] += 10*direction[1]
                 except TypeError:
                     if pg.mouse.get_pressed()[int(key_bindings["dash"][-1])]:
                         if player.dashes > 0 and vector_magnitude(direction) > 0 and player.dash_timer == -1:
@@ -1486,9 +1584,17 @@ def main():
                             
                             direction = normalise(direction)
                             
-                            player.dash_speed[0] += 10*direction[0]*d_time*60
-                            player.dash_speed[1] += 10*direction[1]*d_time*60
+                            player.dash_speed[0] += 10*direction[0]
+                            player.dash_speed[1] += 10*direction[1]
+            
+            if player.dead == True:
+                level_text = {}
+                font = pg.font.SysFont("Comic Sans", 50)
                 
+                temp = font.render("Press " + key_names["reset"].title() + " to Reset", True, (180, 200, 180))
+                    
+                level_text[temp] = [40000, 99999]
+            
         try:
             if pg.key.get_pressed()[key_bindings["reset"]]:
                 for levels in os.walk("levels"):
@@ -1508,8 +1614,9 @@ def main():
                                             break
                                     to_remove = None
                                     for entity in allowed_objects:
-                                        if entity.type == 5:
-                                            to_remove = entity
+                                        if isinstance(entity, PowerUp):
+                                            if entity.type == 5:
+                                                to_remove = entity
                                     if to_remove != None:
                                         allowed_objects.pop(to_remove)
                             level_text = {}
@@ -1540,8 +1647,9 @@ def main():
                                                 break
                                         to_remove = None
                                         for entity in allowed_objects:
-                                            if entity.type == 5:
-                                                to_remove = entity
+                                            if isinstance(entity, PowerUp):
+                                                if entity.type == 5:
+                                                    to_remove = entity
                                         if to_remove != None:
                                             allowed_objects.pop(to_remove)
                                 level_text = {}
@@ -1556,11 +1664,17 @@ def main():
         try:
             if pg.key.get_just_pressed()[key_bindings["menu"]]:
                 menu(True)
+                current_time = time.time()
+                d_time = 1/framerate
+                previous_time = current_time                
                     
         except TypeError:
             if isinstance(key_bindings["menu"], str):
                 if pg.mouse.get_just_pressed()[int(key_bindings["menu"][-1])]:
                     menu(True)
+                    current_time = time.time()
+                    d_time = 1/framerate
+                    previous_time = current_time
                 
                             
         if selected_object != None:
@@ -1572,14 +1686,14 @@ def main():
                 selected_object.start = [selected_object.location[0], selected_object.location[1]]
                     
         for platform in platforms:
-            platform.draw()
+            platform.draw(pre_scaled)
             platform.update()
         
         for power in powerups:
-            power.draw()
+            power.draw(pre_scaled)
             
         if player != []:
-            player.draw()
+            player.draw(pre_scaled)
             player.update(platforms+powerups, d_time)
             
         
@@ -1592,7 +1706,7 @@ def main():
                 else:
                     name.set_alpha(((level_text[name][0]/level_text[name][1]))*628)
                 
-                screen.get_surface().blit(name, [(0.5*screen_width) - (name.get_width()/2), (0.5*screen_height) - (name.get_height()/2)])
+                pre_scaled.blit(name, [(0.5*1280) - (name.get_width()/2), (0.5*720) - (name.get_height()/2)])
                 level_text[name][0] -= d_time
             
             else:
@@ -1600,7 +1714,48 @@ def main():
                 
         for i in to_remove:
             level_text.pop(i)
+            
+        for star in level_stars:
+            temp = pg.Surface([level_stars[star]["size"], level_stars[star]["size"]], pg.SRCALPHA)
+            pg.draw.rect(temp, (255, 255, 200, 100), ([0, 0], [level_stars[star]["size"], level_stars[star]["size"]]))
+            
+            temp = pg.transform.rotate(temp, level_stars[star]["angle"])
+            
+            if level_stars[star]["direction"] == 0: # Counter Clockwise
+                level_stars[star]["angle"] -= level_stars[star]["speed"] * d_time * 60
+                
+            elif level_stars[star]["direction"] == 1: # Clockwise
+                level_stars[star]["angle"] += level_stars[star]["speed"] * d_time * 60
+                    
+            if level_stars[star]["growth_phase"] == 0: # Shrinking
+                level_stars[star]["size"] -= level_stars[star]["speed"] * d_time / 7.5 * 10
+                
+                if level_stars[star]["size"] <= 10:
+                    level_stars[star]["size"] = 10
+                    level_stars[star]["growth_phase"] = 1
+                
+            elif level_stars[star]["growth_phase"] == 1: # Growing
+                level_stars[star]["size"] += level_stars[star]["speed"] * d_time / 7.5 * 10
+                
+                if level_stars[star]["size"] >= 20:
+                    level_stars[star]["size"] = 20
+                    level_stars[star]["growth_phase"] = 0
+            
+            
+            
+            draw_location = [level_stars[star]["location"][0] - temp.get_width()/2, level_stars[star]["location"][1] - temp.get_height()/2]
+            pre_scaled.blit(temp, draw_location)
         
+        # Scaling to actual display
+        ratio = min(screen_width/1280, screen_height/720)
+        
+        scaled_width = int(1280 * ratio)
+        scaled_height = int(720 * ratio)
+        
+        pre_scaled = pg.transform.scale(pre_scaled, [scaled_width, scaled_height])
+        center = [screen_width//2, screen_height//2]
+        
+        screen.get_surface().blit(pre_scaled, [center[0] - scaled_width/2, center[1] - scaled_height/2])
             
         screen.flip()
         clock.tick(framerate)
