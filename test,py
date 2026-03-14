@@ -1,3 +1,0 @@
-a = "aBC Def"
-
-print(a.title())

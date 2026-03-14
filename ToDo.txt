@@ -1,7 +1,6 @@
 
 Game Mechanics
-    -Add in fog
-
+    -Add Parallax to stars.
 
 GUI
 
@@ -16,6 +15,7 @@ Levels
     Double Jump
     Dash stacking
     Use Moving platforms
+    Conveyer
 
 Art
     Texture Player
@@ -24,3 +24,6 @@ Art
     Texture moving platform
     Texture end platform
     Texture spikes
+    Texture fog
+
+    Make sound effects

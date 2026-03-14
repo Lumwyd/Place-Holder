@@ -37,6 +37,18 @@ for line in options.readlines():
                 framerate = int(line[1])
                 framerate_text = str(framerate)
         
+        elif line[0] == "master_volume":
+            global master_volume
+            master_volume = float(line[1])/10
+            
+        elif line[0] == "music_volume":
+            global music_volume
+            music_volume = float(line[1])/10
+        
+        elif line[0] == "sfx_volume":
+            global sfx_volume
+            sfx_volume = float(line[1])/10
+            
         elif line[0] == "resolution":
             resolution = line[1]
             screen_width, screen_height = int(line[1].split("X")[0]),int(line[1].split("X")[1])
@@ -50,69 +62,76 @@ for line in options.readlines():
 options.close()
 
 # loading images
-lion_images = {}
-builder_images = {}
-tiles = {}
-items = {}
-weapons = {}
+player_images = {}
+platform_images = {}
+power_images = {}
 other_images = {}
 for image in os.walk("assets\\images"):
     
-    if image[0] == "assets\\images\\lion":
+    if image[0] == "assets\\images\\player":
         for frame in image[2]:
-            lion_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\lion\\"+frame)
-               
-    elif image[0] == "assets\\images\\builder":
-        for frame in image[2]:
-            builder_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\builder\\"+frame)
+            player_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+frame)
     
-    elif image[0] == "assets\\images\\tiles":
-        for tile in image[2]:
-            if len(tile.split("_")) > 1:
-                root = tile.split("_")[0]
-                extension = tile.removesuffix(".png").split("_")[1]
+    elif image[0] == "assets\\images\\platforms":
+        for platform in image[2]:
+            if len(platform.split("_")) > 1:
+                root = platform.split("_")[0]
+                frame = platform.removesuffix(".png").split("_")[1]
                 
                 try:
-                    tiles[root][extension] = pg.image.load("assets\\images\\tiles\\"+tile)
+                    platform_images[root][frame] = pg.image.load("assets\\images\\platforms\\"+platform)
                 except KeyError:
-                    tiles[root] = {}
-                    tiles[root][extension] = pg.image.load("assets\\images\\tiles\\"+tile)
+                    platform_images[root] = {}
+                    platform_images[root][frame] = pg.image.load("assets\\images\\platforms\\"+platform)
             else:
-                tiles[tile.removesuffix(".png")] = pg.image.load("assets\\images\\tiles\\"+tile)
+                platform_images[platform.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+platform)
     
-    elif image[0] == "assets\\images\\items":
-        for item in image[2]:
-                items[item.removesuffix(".png")] = pg.image.load("assets\\images\\items\\"+item)
-    
-    elif image[0] == "assets\\images\\weapons":
-        for weapon in image[2]:
-            if len(weapon.split("_")) > 1:
-                root = weapon.split("_")[0]
-                extension = weapon.removesuffix(".png").split("_")[1]
+    elif image[0] == "assets\\images\\power_ups":
+        for power in image[2]:
+            if len(power.split("_")) > 1:
+                root = power.split("_")[0]
+                frame = power.removesuffix(".png").split("_")[1]
                 
                 try:
-                    weapons[root][extension] = pg.image.load("assets\\images\\weapons\\"+weapon)
+                    power_images[root][frame] = pg.image.load("assets\\images\\power_ups\\"+power)
                 except KeyError:
-                    weapons[root] = {}
-                    weapons[root][extension] = pg.image.load("assets\\images\\weapons\\"+weapon)
-                    
+                    power_images[root] = {}
+                    power_images[root][frame] = pg.image.load("assets\\images\\power_ups\\"+power)
+            else:
+                power_images[power.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+power)
+         
     else:
         for o_i in image[2]:
             other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
             
 other_sounds = {}
-builder_sounds = {}
-lion_sounds = {}
+player_sounds = {}
+platform_sounds = {}
+music = {}
 for sound in os.walk("assets\\sounds"):
     
-    if sound[0] == "assets\\sounds\\lion":
+    if sound[0] == "assets\\sounds\\player":
         for audio in sound[2]:
-            lion_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\lion\\"+audio)
-               
-    elif sound[0] == "assets\\sounds\\builder":
-        for audio in sound[2]:
-            builder_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\builder\\"+audio)
+            player_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\player\\"+audio)
     
+    elif sound[0] == "assets\\sounds\\platforms":
+        for audio in sound[2]:
+            player_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\platforms\\"+audio)
+    
+    elif sound[0] == "assets\\sounds\\music":
+        for audio in sound[2]:
+            if len(audio.split("_")) > 1:
+                root = audio.split("_")[0]
+                frame = audio.removesuffix(".mp3").split("_")[1]
+                
+                try:
+                    music[root][frame] = pg.mixer.Sound("assets\\sounds\\music\\"+audio)
+                except KeyError:
+                    music[root] = {}
+                    music[root][frame] = pg.mixer.Sound("assets\\sounds\\music\\"+audio)
+            else:
+                music[power.removesuffix(".png")] = pg.mixer.Sound("assets\\sounds\\music\\"+audio)
+        
     else:
         for o_s in sound[2]:
             
@@ -203,6 +222,11 @@ def menu(saveable = False):
     global max_level
     global level_stars
     
+    global master_volume
+    global music_volume
+    global sfx_volume
+    global music_channel
+    
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
     title = font.render(title, True, (180, 200, 180))
@@ -285,6 +309,13 @@ def menu(saveable = False):
                     "framerate": button(screen, 0.25, 0.2, [0.5, 0.50], outer, inner, "Framerate: " + framerate_text, slider=True, slider_max = 145, slider_min = 0, slider_value = framerate, slider_colour = (147, 107, 15)),
                     "resolution": button(screen, 0.25, 0.1, [0.5, 0.70], outer, inner, "Resolution: " + str(int(round(screen_width*1.5, 0))) + "X" + str(int(round(screen_height*1.5, 0)))),
     }
+    
+    audio_menu = {"back_om": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  "),
+                  "master_volume": button(screen, 0.25, 0.2, [0.5, 0.30], outer, inner, "Master: " + str(master_volume*10), slider=True, slider_max = 100, slider_min = 0, slider_value = master_volume*10, slider_colour = (147, 107, 15)),
+                  "music_volume": button(screen, 0.25, 0.2, [0.5, 0.50], outer, inner, "Music: " + str(music_volume*10), slider=True, slider_max = 100, slider_min = 0, slider_value = music_volume*10, slider_colour = (147, 107, 15)),
+                  "sfx_volume": button(screen, 0.25, 0.2, [0.5, 0.70], outer, inner, "SFX: " + str(sfx_volume*10), slider=True, slider_max = 100, slider_min = 0, slider_value = sfx_volume*10, slider_colour = (147, 107, 15)),
+    }
+    
     if framerate_text == "Unlimited":
         display_menu["framerate"].slider_value = 145
     if framerate_text == "Vsync":
@@ -350,6 +381,7 @@ def menu(saveable = False):
                     
                     if current_menu[item].get_focused(mouse_pos):
                         sound = choice(["", "1", "2"])
+                        other_sounds["click" + sound].set_volume(master_volume*sfx_volume/100)
                         other_sounds["click" + sound].play()
                         
                         if item == "new_game":
@@ -660,6 +692,10 @@ def menu(saveable = False):
                         elif item == "display_settings":
                             current_menu = display_menu
                             changed_menu = True
+                        
+                        elif item == "audio_settings":
+                            current_menu = audio_menu
+                            changed_menu = True
                             
                         elif item == "fullscreen":
                             options = open("options.txt", "r")
@@ -820,6 +856,131 @@ def menu(saveable = False):
                     options.writelines(prev_options)
                     options.close()
             
+            elif item == "master_volume":
+                temp = current_menu[item].get_focused(mouse_pos)
+                
+                if temp[0]:
+                    current_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                    current_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                        
+                else:
+                    current_menu[item].outer_colour = outer
+                    current_menu[item].inner_colour = inner
+                
+                if temp[0] and (pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]):
+                    master_volume = int(temp[1])/10
+                    current_menu[item].slider_value = master_volume*10
+                    
+                    current_menu[item].text = "Master: " + str(master_volume*10)
+                    
+                    options = open("options.txt", "r")
+                    prev_options = options.readlines()
+                    options.close()
+                    
+                    line_number = 0
+                    new_line = ""
+                    
+                    for line in prev_options:
+                        if ":" in line:
+                            line = line.replace("\n", "").split(":")
+                            
+                            
+                            if line[0] == item:
+                                new_line = item + ":" + str(master_volume*10)+"\n"
+                                break
+
+                        line_number += 1
+                    
+                    prev_options[line_number] = new_line
+                    options = open("options.txt", "w")
+                    options.writelines(prev_options)
+                    options.close()
+                    
+                    music_channel.set_volume(master_volume*music_volume/100)
+            
+            elif item == "music_volume":
+                temp = current_menu[item].get_focused(mouse_pos)
+                
+                if temp[0]:
+                    current_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                    current_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                        
+                else:
+                    current_menu[item].outer_colour = outer
+                    current_menu[item].inner_colour = inner
+                
+                if temp[0] and (pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]):
+                    music_volume = int(temp[1])/10
+                    current_menu[item].slider_value = music_volume*10
+                    
+                    current_menu[item].text = "Music: " + str(music_volume*10)
+                    
+                    options = open("options.txt", "r")
+                    prev_options = options.readlines()
+                    options.close()
+                    
+                    line_number = 0
+                    new_line = ""
+                    
+                    for line in prev_options:
+                        if ":" in line:
+                            line = line.replace("\n", "").split(":")
+                            
+                            
+                            if line[0] == item:
+                                new_line = item + ":" + str(music_volume*10)+"\n"
+                                break
+
+                        line_number += 1
+                    
+                    prev_options[line_number] = new_line
+                    options = open("options.txt", "w")
+                    options.writelines(prev_options)
+                    options.close()
+                    
+                    music_channel.set_volume(master_volume*music_volume/100)
+            
+            elif item == "sfx_volume":
+                temp = current_menu[item].get_focused(mouse_pos)
+                
+                if temp[0]:
+                    current_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                    current_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                        
+                else:
+                    current_menu[item].outer_colour = outer
+                    current_menu[item].inner_colour = inner
+                
+                if temp[0] and (pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]):
+                    sfx_volume = int(temp[1])/10
+                    current_menu[item].slider_value = sfx_volume*10
+                    
+                    current_menu[item].text = "SFX: " + str(sfx_volume*10)
+                    
+                    options = open("options.txt", "r")
+                    prev_options = options.readlines()
+                    options.close()
+                    
+                    line_number = 0
+                    new_line = ""
+                    
+                    for line in prev_options:
+                        if ":" in line:
+                            line = line.replace("\n", "").split(":")
+                            
+                            
+                            if line[0] == item:
+                                new_line = item + ":" + str(sfx_volume*10)+"\n"
+                                break
+
+                        line_number += 1
+                    
+                    prev_options[line_number] = new_line
+                    options = open("options.txt", "w")
+                    options.writelines(prev_options)
+                    options.close()
+            
+            
             else:
                 temp = current_menu[item].text
                 try:
@@ -860,6 +1021,14 @@ def menu(saveable = False):
                                                                                  
                 
         screen.flip()
+        
+        if music_channel.get_busy() == False:
+            global current_track
+            current_track = choice(list(music.keys()))
+            segment = choice(list(music[current_track].keys()))
+
+            music_channel.set_volume(master_volume*music_volume/100)
+            music_channel.play(music[current_track][segment])
         
 class Platform:
     def __init__(self, location, width, height, type = 0):
@@ -1150,11 +1319,15 @@ class Player:
                                                      "direction": randint(0, 1),
                                                      "speed": randint(1, 10)/100,
                                                      "growth_phase": randint(0, 1)}
+                    
                     elif entity.type == 4: # Cam Trigger
                         if self.offset == [0, 0]:
                             self.offset[0], self.offset[1] = [entity.offset[0], entity.offset[1]]
                             entity.offset[0] *= -1
                             entity.offset[1] *= -1
+                            
+                    elif entity.type == 2: #Fog
+                        powerups.remove(entity)  
                         
         if self.offset != [0, 0]:
             destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
@@ -1227,7 +1400,7 @@ class PowerUp:
         elif self.type == 1:
             pg.draw.rect(surface, (255, 100, 255), (self.location, (self.width, self.height)))
         elif self.type == 2:
-            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+            pg.draw.rect(surface, (200, 200, 200), (self.location, (self.width, self.height)))
         elif self.type == 3:
             temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
             pg.draw.rect(temp, (240, 150, 150, 100), ([0, 0], (self.width, self.height)))
@@ -1258,6 +1431,16 @@ powerups = []
 player = []
 allowed_objects = {}
 
+global current_track
+current_track = "MomentsBetween"
+segment = str(randint(1, 5))
+
+global music_channel
+music_channel = pg.mixer.Channel(1)
+
+music_channel.set_volume(master_volume*music_volume/100)
+music_channel.play(music[current_track][segment])
+
  
 def main(): 
     
@@ -1266,6 +1449,8 @@ def main():
     global player
     global allowed_objects
     global level_text
+    
+    global music_channel
     
     for levels in os.walk("levels"):
         for level in levels[2]:
@@ -1763,6 +1948,17 @@ def main():
         current_time = time.time()
         d_time = current_time - previous_time
         previous_time = current_time
+        
+        # Handling Music replay
+        
+        if music_channel.get_busy() == False:
+            global current_track
+            current_track = choice(list(music.keys()))
+            print(current_track)
+            segment = str(randint(1, 5))
+
+            music_channel.set_volume(master_volume*music_volume/100)
+            music_channel.play(music[current_track][segment])
         
 
 menu(True)
