@@ -1,6 +1,6 @@
 
 Game Mechanics
-    -Add Parallax to stars.
+    -Pause for star collect animation
 
 GUI
 
@@ -25,5 +25,6 @@ Art
     Texture end platform
     Texture spikes
     Texture fog
+    Add particles of some kind
 
     Make sound effects

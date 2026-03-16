@@ -36,6 +36,18 @@ for line in options.readlines():
             else:
                 framerate = int(line[1])
                 framerate_text = str(framerate)
+                
+        elif line[0] == "master_volume":
+            global master_volume
+            master_volume = float(line[1])/10
+            
+        elif line[0] == "music_volume":
+            global music_volume
+            music_volume = float(line[1])/10
+        
+        elif line[0] == "sfx_volume":
+            global sfx_volume
+            sfx_volume = float(line[1])/10
         
         elif line[0] == "resolution":
             resolution = line[1]
@@ -50,69 +62,76 @@ for line in options.readlines():
 options.close()
 
 # loading images
-lion_images = {}
-builder_images = {}
-tiles = {}
-items = {}
-weapons = {}
+player_images = {}
+platform_images = {}
+power_images = {}
 other_images = {}
 for image in os.walk("assets\\images"):
     
-    if image[0] == "assets\\images\\lion":
+    if image[0] == "assets\\images\\player":
         for frame in image[2]:
-            lion_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\lion\\"+frame)
-               
-    elif image[0] == "assets\\images\\builder":
-        for frame in image[2]:
-            builder_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\builder\\"+frame)
+            player_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+frame)
     
-    elif image[0] == "assets\\images\\tiles":
-        for tile in image[2]:
-            if len(tile.split("_")) > 1:
-                root = tile.split("_")[0]
-                extension = tile.removesuffix(".png").split("_")[1]
+    elif image[0] == "assets\\images\\platforms":
+        for platform in image[2]:
+            if len(platform.split("_")) > 1:
+                root = platform.split("_")[0]
+                frame = platform.removesuffix(".png").split("_")[1]
                 
                 try:
-                    tiles[root][extension] = pg.image.load("assets\\images\\tiles\\"+tile)
+                    platform_images[root][frame] = pg.image.load("assets\\images\\platforms\\"+platform)
                 except KeyError:
-                    tiles[root] = {}
-                    tiles[root][extension] = pg.image.load("assets\\images\\tiles\\"+tile)
+                    platform_images[root] = {}
+                    platform_images[root][frame] = pg.image.load("assets\\images\\platforms\\"+platform)
             else:
-                tiles[tile.removesuffix(".png")] = pg.image.load("assets\\images\\tiles\\"+tile)
+                platform_images[platform.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+platform)
     
-    elif image[0] == "assets\\images\\items":
-        for item in image[2]:
-                items[item.removesuffix(".png")] = pg.image.load("assets\\images\\items\\"+item)
-    
-    elif image[0] == "assets\\images\\weapons":
-        for weapon in image[2]:
-            if len(weapon.split("_")) > 1:
-                root = weapon.split("_")[0]
-                extension = weapon.removesuffix(".png").split("_")[1]
+    elif image[0] == "assets\\images\\power_ups":
+        for power in image[2]:
+            if len(power.split("_")) > 1:
+                root = power.split("_")[0]
+                frame = power.removesuffix(".png").split("_")[1]
                 
                 try:
-                    weapons[root][extension] = pg.image.load("assets\\images\\weapons\\"+weapon)
+                    power_images[root][frame] = pg.image.load("assets\\images\\power_ups\\"+power)
                 except KeyError:
-                    weapons[root] = {}
-                    weapons[root][extension] = pg.image.load("assets\\images\\weapons\\"+weapon)
-                    
+                    power_images[root] = {}
+                    power_images[root][frame] = pg.image.load("assets\\images\\power_ups\\"+power)
+            else:
+                power_images[power.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+power)
+         
     else:
         for o_i in image[2]:
             other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
             
 other_sounds = {}
-builder_sounds = {}
-lion_sounds = {}
+player_sounds = {}
+platform_sounds = {}
+music = {}
 for sound in os.walk("assets\\sounds"):
     
-    if sound[0] == "assets\\sounds\\lion":
+    if sound[0] == "assets\\sounds\\player":
         for audio in sound[2]:
-            lion_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\lion\\"+audio)
-               
-    elif sound[0] == "assets\\sounds\\builder":
-        for audio in sound[2]:
-            builder_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\builder\\"+audio)
+            player_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\player\\"+audio)
     
+    elif sound[0] == "assets\\sounds\\platforms":
+        for audio in sound[2]:
+            player_sounds[audio.removesuffix(".mp3")] = pg.mixer.Sound("assets\\sounds\\platforms\\"+audio)
+    
+    elif sound[0] == "assets\\sounds\\music":
+        for audio in sound[2]:
+            if len(audio.split("_")) > 1:
+                root = audio.split("_")[0]
+                frame = audio.removesuffix(".mp3").split("_")[1]
+                
+                try:
+                    music[root][frame] = pg.mixer.Sound("assets\\sounds\\music\\"+audio)
+                except KeyError:
+                    music[root] = {}
+                    music[root][frame] = pg.mixer.Sound("assets\\sounds\\music\\"+audio)
+            else:
+                music[power.removesuffix(".png")] = pg.mixer.Sound("assets\\sounds\\music\\"+audio)
+        
     else:
         for o_s in sound[2]:
             
@@ -767,6 +786,8 @@ class Platform:
         self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
+        self.frame = 1
+        
     def draw(self):
         if self.type == 0:
             pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
@@ -804,6 +825,8 @@ class Player:
         self.id = -1
         self.offset = [0, 0]
         self.start = [self.location[0], self.location[1]]
+        
+        self.frame = 1
         
     def draw(self):
         pg.draw.rect(screen.get_surface(), (220, 255, 220), (self.location, (self.width, self.height)))
@@ -896,6 +919,8 @@ class PowerUp:
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
         self.offset = [0, 0]
+        
+        self.frame = 1
         
     def draw(self):
         if self.type == 0:

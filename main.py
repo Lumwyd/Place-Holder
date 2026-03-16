@@ -86,7 +86,7 @@ for image in os.walk("assets\\images"):
             else:
                 platform_images[platform.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+platform)
     
-    elif image[0] == "assets\\images\\power_ups":
+    elif image[0] == "assets\\images\\power_ups":        
         for power in image[2]:
             if len(power.split("_")) > 1:
                 root = power.split("_")[0]
@@ -100,9 +100,22 @@ for image in os.walk("assets\\images"):
             else:
                 power_images[power.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+power)
          
+        
+        for root in image[1]:
+            for frames in os.walk("assets\\images\\power_ups\\"+root):
+                frames = frames[2]
+                for frame in frames:
+                    try:
+                        power_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+root+"\\"+frame)
+                    except KeyError:
+                        power_images[root] = {}
+                        power_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+root+"\\"+frame)
     else:
-        for o_i in image[2]:
-            other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
+        if image[0].count("\\") >= 2:
+            pass
+        else:
+            for o_i in image[2]:
+                other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
             
 other_sounds = {}
 player_sounds = {}
@@ -1045,7 +1058,11 @@ class Platform:
         self.tags = ""
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
+        self.frame = 0
+        
     def draw(self, surface = screen.get_surface()):
+        global d_time
+        self.frame += d_time*60
         if self.type == 0:
             pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
         elif self.type == 1:
@@ -1151,8 +1168,11 @@ class Player:
         self.id = -1
         self.offset = [0, 0]
         self.start = [self.location[0], self.location[1]]
+        self.frame = 0
         
     def draw(self, surface = screen.get_surface()):
+        global d_time
+        self.frame += d_time*60
         pg.draw.rect(surface, (220, 255, 220), (self.location, (self.width, self.height)))
     
     def collide(self, entity):
@@ -1312,13 +1332,16 @@ class Player:
                     elif entity.type == 5: # Stars
                         stars[level_number] = True  
                         powerups.remove(entity) 
+                        other_sounds["starcollect"].set_volume(master_volume*music_volume/100)
+                        other_sounds["starcollect"].play()
                         # of the form: location, size, rotation 
                         level_stars[level_number] = {"location":[randint(60, 1250), randint(60, 690)],
                                                      "size":randint(10, 20), 
                                                      "angle":randint(0, 359),
                                                      "direction": randint(0, 1),
                                                      "speed": randint(1, 10)/100,
-                                                     "growth_phase": randint(0, 1)}
+                                                     "growth_phase": randint(0, 1),
+                                                     "layer":randint(1, 3)}
                     
                     elif entity.type == 4: # Cam Trigger
                         if self.offset == [0, 0]:
@@ -1393,8 +1416,13 @@ class PowerUp:
         
         self.offset = [0, 0]
         
+        self.frame = 0
+        
         
     def draw(self, surface = screen.get_surface()):
+        global d_time
+        self.frame += d_time*60
+        frame = str(int(self.frame))
         if self.type == 0:
             pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
         elif self.type == 1:
@@ -1408,7 +1436,12 @@ class PowerUp:
         elif self.type == 4:
             pass
         elif self.type == 5:
-            pg.draw.rect(surface, (255, 255, 200), (self.location, (self.width, self.height)))
+            try:
+                surface.blit(power_images["star_idle"][frame], self.location)
+            except KeyError:
+                self.frame = 1
+                frame = "1"
+                surface.blit(power_images["star_idle"][frame], self.location)
         
        
 global level_number
@@ -1901,9 +1934,10 @@ def main():
             level_text.pop(i)
             
         for star in level_stars:
+            temp_star = deepcopy(power_images["star_idle"]["1"])
+            temp_star = pg.transform.scale(temp_star, [level_stars[star]["size"], level_stars[star]["size"]])
             temp = pg.Surface([level_stars[star]["size"], level_stars[star]["size"]], pg.SRCALPHA)
-            pg.draw.rect(temp, (255, 255, 200, 100), ([0, 0], [level_stars[star]["size"], level_stars[star]["size"]]))
-            
+            temp.blit(temp_star)
             temp = pg.transform.rotate(temp, level_stars[star]["angle"])
             
             if level_stars[star]["direction"] == 0: # Counter Clockwise
@@ -1925,10 +1959,32 @@ def main():
                 if level_stars[star]["size"] >= 20:
                     level_stars[star]["size"] = 20
                     level_stars[star]["growth_phase"] = 0
-            
-            
-            
+                    
             draw_location = [level_stars[star]["location"][0] - temp.get_width()/2, level_stars[star]["location"][1] - temp.get_height()/2]
+            
+            if player != []:
+                if not "-no_collide-" in player.tags:
+                    if level_stars[star]["layer"] == 3:
+                        level_stars[star]["location"][0] += -(player.speed[0] + player.speed[0])*d_time*6
+                        level_stars[star]["location"][1] += -(player.speed[1] + player.speed[1])*d_time*6
+                    elif level_stars[star]["layer"] == 2:
+                        level_stars[star]["location"][0] += -(player.speed[0] + player.speed[0])*d_time*3
+                        level_stars[star]["location"][1] += -(player.speed[1] + player.speed[1])*d_time*3
+                    elif level_stars[star]["layer"] == 1:
+                        level_stars[star]["location"][0] += -(player.speed[0] + player.speed[0])*d_time*1.5
+                        level_stars[star]["location"][1] += -(player.speed[1] + player.speed[1])*d_time*1.5
+                        
+                if level_stars[star]["location"][0] < 0:
+                    level_stars[star]["location"][0] = screen_width
+                elif level_stars[star]["location"][0] > screen_width:
+                    level_stars[star]["location"][0] = 0
+                    
+                if level_stars[star]["location"][1] < 0:
+                    level_stars[star]["location"][1] = screen_height
+                elif level_stars[star]["location"][1] > screen_height:
+                    level_stars[star]["location"][1] = 0
+                    
+                
             pre_scaled.blit(temp, draw_location)
         
         # Scaling to actual display
@@ -1954,9 +2010,7 @@ def main():
         if music_channel.get_busy() == False:
             global current_track
             current_track = choice(list(music.keys()))
-            print(current_track)
             segment = str(randint(1, 5))
-
             music_channel.set_volume(master_volume*music_volume/100)
             music_channel.play(music[current_track][segment])
         
