@@ -24,7 +24,6 @@ Art
     Texture moving platform
     Texture end platform
     Texture spikes
-    Texture fog
     Add particles of some kind
 
     Make sound effects
