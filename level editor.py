@@ -101,8 +101,11 @@ for image in os.walk("assets\\images"):
                 power_images[power.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+power)
          
     else:
-        for o_i in image[2]:
-            other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
+        if image[0].count("\\") >= 2:
+            pass
+        else:
+            for o_i in image[2]:
+                other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
             
 other_sounds = {}
 player_sounds = {}

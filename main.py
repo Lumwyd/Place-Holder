@@ -1427,21 +1427,33 @@ class PowerUp:
             pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
         elif self.type == 1:
             pg.draw.rect(surface, (255, 100, 255), (self.location, (self.width, self.height)))
-        elif self.type == 2:
-            pg.draw.rect(surface, (200, 200, 200), (self.location, (self.width, self.height)))
-        elif self.type == 3:
+        elif self.type == 2: # Fog
+            temp = deepcopy(power_images["fog"])
+            temp = pg.transform.scale(temp, [self.width, self.height])
+            surface.blit(temp, self.location)
+            
+            
+        elif self.type == 3: # Refusal Zone
             temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
             pg.draw.rect(temp, (240, 150, 150, 100), ([0, 0], (self.width, self.height)))
             surface.blit(temp, self.location)
-        elif self.type == 4:
+            
+            
+        elif self.type == 4: # Cam Trigger
             pass
-        elif self.type == 5:
+        
+        
+        elif self.type == 5: # Star
             try:
-                surface.blit(power_images["star_idle"][frame], self.location)
+                temp = deepcopy(power_images["star_idle"][frame])
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
             except KeyError:
                 self.frame = 1
                 frame = "1"
-                surface.blit(power_images["star_idle"][frame], self.location)
+                temp = deepcopy(power_images["star_idle"][frame])
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
         
        
 global level_number
