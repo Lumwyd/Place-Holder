@@ -1,6 +1,6 @@
-fullscreen:1
+fullscreen:0
 framerate:60
-resolution:700X700
+resolution:1360X770
 
 master_volume:100.0
 music_volume:50.0

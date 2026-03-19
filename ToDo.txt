@@ -1,6 +1,7 @@
 
 Game Mechanics
     -Add an animation for the end of stage
+    -Soften music with vignette.
 
 GUI
 
@@ -18,6 +19,7 @@ Levels
     Conveyer
     Single platform cycling
     teach flow cycling
+    use flow mult again, but with more agency
 
 Art
     Texture Player
@@ -28,3 +30,5 @@ Art
     Add particles of some kind
 
     Make sound effects
+
+Misc

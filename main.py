@@ -1442,7 +1442,6 @@ class Player:
             self.height = 30
             self.width = 55
  
- 
 class PowerUp:
     def __init__(self, location, type):
         self.location = location
@@ -1499,6 +1498,7 @@ class PowerUp:
                 temp = pg.transform.scale(temp, [self.width, self.height])
                 surface.blit(temp, self.location)
         
+   
        
 global level_number
 global stars
@@ -1777,10 +1777,16 @@ def main():
     
     level_text = {}
     level_text[temp] = [5, 5]
+    
+    cutout_size = [1280, 720]
+    vignette_strength = 250
+    vignette_alpha = 0
         
     while True:  
         direction = [0, 0]
         pre_scaled = pg.Surface([1280, 720])  
+        vignette = pg.Surface([1280, 720], pg.SRCALPHA) 
+        
            
         mouse_position = list(pg.mouse.get_pos())
         # # mouse_position[0] *= 1.5
@@ -1804,6 +1810,7 @@ def main():
         direction = [0, 0]
         frame += 1
         pre_scaled.fill((25, 25, 75))
+        
         
             
         for event in pg.event.get():
@@ -2185,6 +2192,21 @@ def main():
             player.draw(pre_scaled)
             player.update(platforms+powerups, d_time)
             
+            if player.flow_mult > 0:
+                flow_ratio = ((player.flow_mult-1)/5)*100
+                
+                vignette_alpha =  min(0.9*vignette_alpha + 0.1*max(min(50*flow_ratio, 255), 0), 200)
+                cutout_size[0] = max(0.1*(1280*(1-flow_ratio/40) ) + (0.9*cutout_size[0]), 0.75*1280)
+                cutout_size[1] = max(0.1*(720*(1-flow_ratio/40)) + (0.9*cutout_size[1]), 0.75*720)
+                # print(flow_ratio, vignette_alpha)
+        
+        vignette.fill((100, 255, 100, vignette_alpha))
+        pg.draw.ellipse(vignette, (0, 0, 0, 0), [[640 - (cutout_size[0]/2), 360 - (cutout_size[1]/2)], cutout_size])
+        vignette = smooth_blur(vignette, vignette_strength/5)
+        vignette = smooth_blur(vignette, vignette_strength/5)
+        vignette = smooth_blur(vignette, vignette_strength/5)
+        vignette = smooth_blur(vignette, vignette_strength/5)
+        vignette = smooth_blur(vignette, vignette_strength/5)
                     
         for platform in platforms:
             platform.draw(pre_scaled)
@@ -2218,6 +2240,8 @@ def main():
         for power in powerups:
             power.draw(pre_scaled)
             
+        
+        pre_scaled.blit(vignette)
         
         to_remove = []
         for name in level_text:
