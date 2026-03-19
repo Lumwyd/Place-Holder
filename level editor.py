@@ -1327,12 +1327,29 @@ def main():
         
         for powerup in powerups:
             powerup.draw()
+            powerup.frame = 1
             
         for platform in platforms:
             platform.draw()
+            platform.frame = 1
             
         for play_er in player:
             play_er.draw()
+            play_er.frame = 1
+        
+        temp_dict = {}
+        to_remove = []
+        for thing in list(allowed_objects.keys()):
+            to_remove.append(thing)
+            number = allowed_objects[thing]
+            thing.frame = 1
+            temp_dict[thing] = number
+            
+        for thing in to_remove:
+            allowed_objects.pop(thing)
+        
+        for thing in temp_dict:
+            allowed_objects[thing] = temp_dict[thing]
             
         screen.flip()
         

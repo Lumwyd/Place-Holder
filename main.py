@@ -240,6 +240,8 @@ def menu(saveable = False):
     global sfx_volume
     global music_channel
     
+    global animation
+    
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
     title = font.render(title, True, (180, 200, 180))
@@ -251,19 +253,26 @@ def menu(saveable = False):
     star_inner = (240, 240, 100)
     
     if saveable == True:
-        if cont == True:
-            title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.15], outer, inner, "Continue"),
-                          "levels":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "  Levels  "),
-                          "save":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "  Save  "),
-                          "load":button(screen, 0.25, 0.1, [0.5, 0.6], outer, inner, "  Load  "),
-                          "options":button(screen, 0.25, 0.1, [0.5, 0.75], outer, inner, "Options"),
-                          "quit":button(screen, 0.25, 0.1, [0.5, 0.9], outer, inner, "  Quit  ")}
+        if animation == False:
+            if cont == True:
+                title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.15], outer, inner, "Continue"),
+                            "levels":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "  Levels  "),
+                            "save":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "  Save  "),
+                            "load":button(screen, 0.25, 0.1, [0.5, 0.6], outer, inner, "  Load  "),
+                            "options":button(screen, 0.25, 0.1, [0.5, 0.75], outer, inner, "Options"),
+                            "quit":button(screen, 0.25, 0.1, [0.5, 0.9], outer, inner, "  Quit  ")}
+            else:
+                title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "New Game"),
+                            "load":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "  Load  "),
+                            "options":button(screen, 0.25, 0.1, [0.5, 0.6], outer, inner, "Options"),
+                            "quit":button(screen, 0.25, 0.1, [0.5, 0.75], outer, inner, "  Quit  ")}
         else:
-            title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "New Game"),
-                        "load":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "  Load  "),
-                        "options":button(screen, 0.25, 0.1, [0.5, 0.6], outer, inner, "Options"),
-                        "quit":button(screen, 0.25, 0.1, [0.5, 0.75], outer, inner, "  Quit  ")}
-            
+            title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.15], outer, inner, "Continue"),
+                          "stop_anim":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "Skip Animation"),
+                          "options":button(screen, 0.25, 0.1, [0.5, 0.45], outer, inner, "Options"),
+                          "quit":button(screen, 0.25, 0.1, [0.5, 0.6], outer, inner, "  Quit  ")}
+          
+                
     else:
         if cont == True:
             title_menu = {"new_game":button(screen, 0.25, 0.1, [0.5, 0.3], outer, inner, "Continue"),
@@ -425,6 +434,10 @@ def menu(saveable = False):
                         elif item == "controls":
                             current_menu = key_menu
                             changed_menu = True
+                            
+                        elif item == "stop_anim":
+                            animation = False
+                            end = True
                         
                         elif item in key_menu and not item == "back_om" and not item == "slider":
                             
@@ -1195,6 +1208,7 @@ class Player:
         global level_stars
         
         global previous_time
+        global music_channel
         
         self.cayote_timer += d_time
         self.frame += d_time*60
@@ -1332,8 +1346,8 @@ class Player:
                     elif entity.type == 5: # Stars
                         stars[level_number] = True  
                         powerups.remove(entity) 
-                        other_sounds["starcollect"].set_volume(master_volume*music_volume/100)
-                        other_sounds["starcollect"].play()
+                        other_sounds["star_collect"].set_volume(master_volume*music_volume/100)
+                        other_sounds["star_collect"].play()
                         # of the form: location, size, rotation 
                         star_data = {"location":[randint(60, 1250), randint(60, 690)],
                                                      "size":randint(10, 20), 
@@ -1342,7 +1356,10 @@ class Player:
                                                      "speed": randint(1, 10)/100,
                                                      "growth_phase": randint(0, 1),
                                                      "layer":randint(1, 3)}
+                        
+                        music_channel.pause()
                         star_collect_animation(entity, star_data)
+                        music_channel.unpause()
                         level_stars[level_number] = star_data
                         previous_time = time.time()
                         
@@ -1490,6 +1507,9 @@ music_channel = pg.mixer.Channel(1)
 music_channel.set_volume(master_volume*music_volume/100)
 music_channel.play(music[current_track][segment])
 
+global animation
+animation = False
+
 def star_collect_animation(star:PowerUp, star_data):
     global animation
     global power_images
@@ -1577,6 +1597,8 @@ def star_collect_animation(star:PowerUp, star_data):
             y_diff = star.location[1] - destination[1]
             trail = True
             ap = True
+            other_sounds["star_beam"].set_volume(master_volume*music_volume/100)
+            other_sounds["star_beam"].play()
             
         elif [round(star.location[0]), round(star.location[1])] == destination and  not time_taken >= framerate*2:
             #making it pause above head
@@ -1595,9 +1617,12 @@ def star_collect_animation(star:PowerUp, star_data):
             x_diff = 0
             y_diff = 0
             star.height = star.width
-            
+            size_diff = star_data["size"] - star.height
             explode = True
             frame = 1
+            
+            other_sounds["star_burst"].set_volume(master_volume*music_volume/100)
+            other_sounds["star_burst"].play()
             
         elif [round(star.location[0]), round(star.location[1])] == destination and explode == True:
             #making it stop at destination
@@ -1613,8 +1638,7 @@ def star_collect_animation(star:PowerUp, star_data):
         if time_taken >= 1:
             time_taken += 1
         
-        if explode != True:
-            star.draw(temp_surface)
+        star.draw(temp_surface)
             
         if trail == True and ap == True and oob != True:
             frame += (1/framerate) *60
@@ -1632,7 +1656,6 @@ def star_collect_animation(star:PowerUp, star_data):
                 image = pg.transform.scale(image, [star.width, image.height])
             
             temp_surface.blit(image, [star.location[0] , star.location[1] + star.height])
-            time.sleep(1)
             
         if explode == True:
             frame += (1/framerate) *60
@@ -1641,10 +1664,13 @@ def star_collect_animation(star:PowerUp, star_data):
             
             try:
                 image = power_images["star_burst"][str(frame)]
-                temp_surface.blit(image, [star.location[0]-(image.width/2), star.location[1] - (image.height/2)])
+                temp_surface.blit(image, [star.location[0] + (star.width/2)-(image.width/2), star.location[1] + (star.height/2) - (image.height/2)])
+                
+                star.width += size_diff/111
+                star.height += size_diff/111
                 
             except KeyError:
-                return
+                animation = False
                 
             
             
