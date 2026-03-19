@@ -1,5 +1,6 @@
 
 Game Mechanics
+    -Add an animation for the end of stage
 
 GUI
 
@@ -15,13 +16,14 @@ Levels
     Dash stacking
     Use Moving platforms
     Conveyer
+    Single platform cycling
+    teach flow cycling
 
 Art
     Texture Player
     Animate Player
     Texture start Platform
     Texture moving platform
-    Texture end platform
     Texture spikes
     Add particles of some kind
 

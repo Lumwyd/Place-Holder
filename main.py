@@ -1087,7 +1087,9 @@ class Platform:
         elif self.type == 4:
             pg.draw.rect(surface, (50, 240, 50), (self.location, (self.width, self.height)))
         elif self.type == 5:
-            pg.draw.rect(surface, (255, 150, 150), (self.location, (self.width, self.height)))
+            image = platform_images["end"]
+            image = pg.transform.scale(image, [self.width, self.height])
+            surface.blit(image, (self.location))
         
     def update(self):
         global d_time
@@ -1217,11 +1219,14 @@ class Player:
             self.crouched = True
             self.dash_timer += d_time
         else:
-            self.speed[1] += 0.1*d_time*60
+            if not "-no_collide-" in self.tags:
+                self.speed[1] += 0.1*d_time*60
             
         if self.dash_timer >= 0.17:
             self.crouched = True
-            self.speed[1] += 0.1*d_time*60
+            
+            if not "-no_collide-" in self.tags:
+                self.speed[1] += 0.1*d_time*60
             
             self.dash_speed[0] *= 0.8
             self.dash_speed[1] *= 0.8
@@ -1237,6 +1242,9 @@ class Player:
             self.flow_mult += self.flow_mult*0.035*d_time
         else:
             self.flow_mult = 1
+            
+        if self.speed[1] >= 14.5:
+            self.speed[1] = 14.5
                 
         self.location[0] += self.speed[0]*self.flow_mult*d_time*60
         self.location[1] += self.speed[1]*self.flow_mult*d_time*60
@@ -1276,6 +1284,42 @@ class Player:
 
                     else:
                         if y_diff < 0:
+                            
+                            if entity.type == 5:
+                                level_number += 1
+                                max_level = max(level_number, max_level)
+                                for levels in os.walk("levels"):
+                                    for level in levels[2]:
+                                        if level.split("-")[0] == str(level_number):
+                                            
+                                            level_name = level.split("-")[1].removesuffix(".lvl")
+                                            save = open("levels\\"+ level, "rb")
+                                            load_level(save)
+                                            
+                                            if level_number in stars:
+                                                if stars[level_number]:
+                                                    for entity in powerups:
+                                                        if entity.type == 5:
+                                                            powerups.remove(entity)
+                                                            break
+                                                    to_remove = None
+                                                    for entity in allowed_objects:
+                                                        if isinstance(entity, PowerUp):
+                                                            if entity.type == 5:
+                                                                to_remove = entity
+                                                    if to_remove != None:
+                                                        allowed_objects.pop(to_remove)
+                                                                
+                                            if player != []:
+                                                player = player[0]
+                                            
+                                            font = pg.font.SysFont("Comic Sans", 50)
+                                            temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
+                                            level_text = {}
+                                            level_text[temp] = [5, 5]
+                                            break
+                        
+                            
                             self.on_ground = True
                             Bottom_collide = True
                             if not self in entity.passengers:
@@ -1297,40 +1341,10 @@ class Player:
                     
                     if entity.type == 2:
                         self.dead = True
-                    if entity.type == 5:
-                        level_number += 1
-                        max_level = max(level_number, max_level)
-                        for levels in os.walk("levels"):
-                            for level in levels[2]:
-                                if level.split("-")[0] == str(level_number):
-                                    
-                                    level_name = level.split("-")[1].removesuffix(".lvl")
-                                    save = open("levels\\"+ level, "rb")
-                                    load_level(save)
-                                    
-                                    if level_number in stars:
-                                        if stars[level_number]:
-                                            for entity in powerups:
-                                                if entity.type == 5:
-                                                    powerups.remove(entity)
-                                                    break
-                                            to_remove = None
-                                            for entity in allowed_objects:
-                                                if isinstance(entity, PowerUp):
-                                                    if entity.type == 5:
-                                                        to_remove = entity
-                                            if to_remove != None:
-                                                allowed_objects.pop(to_remove)
-                                                        
-                                    if player != []:
-                                        player = player[0]
-                                    
-                                    font = pg.font.SysFont("Comic Sans", 50)
-                                    temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
-                                    level_text = {}
-                                    level_text[temp] = [5, 5]
-                                    break
+                        self.speed[0] *= 0.1
+                        self.speed[1] *= 0.1
                         
+                    
                             
                 elif isinstance(entity, PowerUp):
                     if entity.type == 0: #Jump Crystal
@@ -1371,7 +1385,8 @@ class Player:
                             entity.offset[1] *= -1
                             
                     elif entity.type == 2: #Fog
-                        powerups.remove(entity)  
+                        if not "-triggered-" in entity.tags:
+                            entity.tags += "-triggered"
                         
         if self.offset != [0, 0]:
             destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
@@ -1413,8 +1428,11 @@ class Player:
         
         if self.crouched == True:
             if self.height == 55:
-                if self.on_ground:
+                if self.on_ground or self.dash_timer != -1:
                     self.location[1] += 15
+                
+                else:
+                    self.location[1] += 7.5
                 
                 self.height = 40
         else:
@@ -1442,15 +1460,20 @@ class PowerUp:
         
     def draw(self, surface = screen.get_surface()):
         global d_time
-        self.frame += d_time*60
-        frame = str(int(self.frame))
+        if not "-fog-" in self.tags:
+            self.frame += d_time*60
+            frame = str(int(self.frame))
         if self.type == 0:
             pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
         elif self.type == 1:
             pg.draw.rect(surface, (255, 100, 255), (self.location, (self.width, self.height)))
         elif self.type == 2: # Fog
+            if "-triggered-" in self.tags:
+                self.frame += d_time*60
+            
             temp = deepcopy(power_images["fog"])
             temp = pg.transform.scale(temp, [self.width, self.height])
+            temp.set_alpha(min(max(255 - int(2*self.frame), 0), 255))
             surface.blit(temp, self.location)
             
             
@@ -1554,14 +1577,6 @@ def star_collect_animation(star:PowerUp, star_data):
         
         temp_surface.fill((25, 25, 75, 255))
         
-        for platform in platforms:
-            platform.draw(temp_surface)
-        
-        for power in powerups:
-            power.draw(temp_surface)
-            
-        
-            
         for sky_star in level_stars:
             temp_star = deepcopy(power_images["star_idle"]["1"])
             temp_star = pg.transform.scale(temp_star, [level_stars[sky_star]["size"], level_stars[sky_star]["size"]])
@@ -1575,6 +1590,16 @@ def star_collect_animation(star:PowerUp, star_data):
                                
                 
             temp_surface.blit(temp, draw_location)
+        
+        
+        for platform in platforms:
+            platform.draw(temp_surface)
+        
+        for power in powerups:
+            power.draw(temp_surface)
+            
+        
+            
         
         fade.fill((0, 0, 0, fade_alpha))
         fade_alpha += (4/framerate)*60
@@ -1780,30 +1805,7 @@ def main():
         frame += 1
         pre_scaled.fill((25, 25, 75))
         
-        allowed_images = {}
-        for thing in allowed_objects:
-            temp_surface = pg.Surface([thing.width, thing.height])
-            thing.location = [0, 0]
-            if allowed_objects[thing] == 0:
-                temp_surface.fill((70, 70, 70))
-            else:
-                thing.draw(temp_surface)
-            ratio = 80 / max(thing.width, thing.height) 
-            temp_surface = pg.transform.scale_by(temp_surface, ratio)
-            allowed_images[temp_surface] = thing
             
-        start_x = 20
-        i = 0
-        for image in allowed_images:
-                
-            center = image.get_height()/2
-            pre_scaled.blit(image, [start_x + (100 * i), 50 - center])
-            font = pg.font.SysFont("Comic Sans", 20)
-            number = allowed_objects[allowed_images[image]]
-            number = font.render(str(number), True, (180, 200, 180))
-            pre_scaled.blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
-            i += 1
-        
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 sys.exit(0)
@@ -2116,45 +2118,6 @@ def main():
                     d_time = 1/framerate
                     previous_time = current_time
                 
-                            
-        if selected_object != None:
-            selected_object.location = [mouse_position[0], mouse_position[1]]
-            selected_object.location[0] -= selected_offset[0]
-            selected_object.location[1] -= selected_offset[1]
-            selected_object.centre = [selected_object.location[0] + selected_object.width/2, selected_object.location[1] + selected_object.height/2]
-            if isinstance(selected_object, Platform) or isinstance(selected_object, Player):
-                selected_object.start = [selected_object.location[0], selected_object.location[1]]
-                    
-        for platform in platforms:
-            platform.draw(pre_scaled)
-            platform.update()
-        
-        for power in powerups:
-            power.draw(pre_scaled)
-            
-        if player != []:
-            player.draw(pre_scaled)
-            player.update(platforms+powerups, d_time)
-            
-        
-        to_remove = []
-        for name in level_text:
-            if level_text[name][0] > 0:
-                
-                if level_text[name][0] > 0.4*level_text[name][1]:
-                    name.set_alpha((1-(level_text[name][0]/level_text[name][1]))*425)
-                else:
-                    name.set_alpha(((level_text[name][0]/level_text[name][1]))*628)
-                
-                pre_scaled.blit(name, [(0.5*1280) - (name.get_width()/2), (0.5*720) - (name.get_height()/2)])
-                level_text[name][0] -= d_time
-            
-            else:
-                to_remove.append(name)
-                
-        for i in to_remove:
-            level_text.pop(i)
-            
         for star in level_stars:
             temp_star = deepcopy(power_images["star_idle"]["1"])
             temp_star = pg.transform.scale(temp_star, [level_stars[star]["size"], level_stars[star]["size"]])
@@ -2187,14 +2150,14 @@ def main():
             if player != []:
                 if not "-no_collide-" in player.tags:
                     if level_stars[star]["layer"] == 3:
-                        level_stars[star]["location"][0] += -(player.speed[0] + player.speed[0])*d_time*6
-                        level_stars[star]["location"][1] += -(player.speed[1] + player.speed[1])*d_time*6
+                        level_stars[star]["location"][0] += -(player.speed[0] + player.dash_speed[0])*d_time*12
+                        level_stars[star]["location"][1] += -(player.speed[1] + player.dash_speed[1])*d_time*12
                     elif level_stars[star]["layer"] == 2:
-                        level_stars[star]["location"][0] += -(player.speed[0] + player.speed[0])*d_time*3
-                        level_stars[star]["location"][1] += -(player.speed[1] + player.speed[1])*d_time*3
+                        level_stars[star]["location"][0] += -(player.speed[0] + player.dash_speed[0])*d_time*6
+                        level_stars[star]["location"][1] += -(player.speed[1] + player.dash_speed[1])*d_time*6
                     elif level_stars[star]["layer"] == 1:
-                        level_stars[star]["location"][0] += -(player.speed[0] + player.speed[0])*d_time*1.5
-                        level_stars[star]["location"][1] += -(player.speed[1] + player.speed[1])*d_time*1.5
+                        level_stars[star]["location"][0] += -(player.speed[0] + player.dash_speed[0])*d_time*3
+                        level_stars[star]["location"][1] += -(player.speed[1] + player.dash_speed[1])*d_time*3
                         
                 if level_stars[star]["location"][0] < 0:
                     level_stars[star]["location"][0] = pre_scaled.width
@@ -2208,6 +2171,72 @@ def main():
                 
             
             pre_scaled.blit(temp, draw_location)
+        
+                            
+        if selected_object != None:
+            selected_object.location = [mouse_position[0], mouse_position[1]]
+            selected_object.location[0] -= selected_offset[0]
+            selected_object.location[1] -= selected_offset[1]
+            selected_object.centre = [selected_object.location[0] + selected_object.width/2, selected_object.location[1] + selected_object.height/2]
+            if isinstance(selected_object, Platform) or isinstance(selected_object, Player):
+                selected_object.start = [selected_object.location[0], selected_object.location[1]]
+              
+        if player != []:
+            player.draw(pre_scaled)
+            player.update(platforms+powerups, d_time)
+            
+                    
+        for platform in platforms:
+            platform.draw(pre_scaled)
+            platform.update()
+        
+        allowed_images = {}
+        for thing in allowed_objects:
+            temp_surface = pg.Surface([thing.width, thing.height])
+            thing.location = [0, 0]
+            if allowed_objects[thing] == 0:
+                temp_surface.fill((70, 70, 70))
+            else:
+                thing.draw(temp_surface)
+            ratio = 80 / max(thing.width, thing.height) 
+            temp_surface = pg.transform.scale_by(temp_surface, ratio)
+            allowed_images[temp_surface] = thing
+        
+        start_x = 20
+        i = 0
+        for image in allowed_images:
+                
+            center = image.get_height()/2
+            pre_scaled.blit(image, [start_x + (100 * i), 50 - center])
+            font = pg.font.SysFont("Comic Sans", 20)
+            number = allowed_objects[allowed_images[image]]
+            number = font.render(str(number), True, (180, 200, 180))
+            pre_scaled.blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
+            i += 1
+        
+        
+        for power in powerups:
+            power.draw(pre_scaled)
+            
+        
+        to_remove = []
+        for name in level_text:
+            if level_text[name][0] > 0:
+                
+                if level_text[name][0] > 0.4*level_text[name][1]:
+                    name.set_alpha((1-(level_text[name][0]/level_text[name][1]))*425)
+                else:
+                    name.set_alpha(((level_text[name][0]/level_text[name][1]))*628)
+                
+                pre_scaled.blit(name, [(0.5*1280) - (name.get_width()/2), (0.5*720) - (name.get_height()/2)])
+                level_text[name][0] -= d_time
+            
+            else:
+                to_remove.append(name)
+                
+        for i in to_remove:
+            level_text.pop(i)
+            
         
         # Scaling to actual display
         ratio = min(screen_width/1280, screen_height/720)

@@ -1328,6 +1328,9 @@ def main():
         for powerup in powerups:
             powerup.draw()
             powerup.frame = 1
+            if powerup.type == 2:
+                if not "-fog-" in powerup.tags:
+                    powerup.tags += "-fog-"
             
         for platform in platforms:
             platform.draw()
