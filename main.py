@@ -1171,8 +1171,6 @@ class Player:
         self.frame = 0
         
     def draw(self, surface = screen.get_surface()):
-        global d_time
-        self.frame += d_time*60
         pg.draw.rect(surface, (220, 255, 220), (self.location, (self.width, self.height)))
     
     def collide(self, entity):
@@ -1196,8 +1194,10 @@ class Player:
         global max_level
         global level_stars
         
-        self.cayote_timer += d_time
+        global previous_time
         
+        self.cayote_timer += d_time
+        self.frame += d_time*60
         
         if self.dash_timer >= 0:
             self.crouched = True
@@ -1335,14 +1335,18 @@ class Player:
                         other_sounds["starcollect"].set_volume(master_volume*music_volume/100)
                         other_sounds["starcollect"].play()
                         # of the form: location, size, rotation 
-                        level_stars[level_number] = {"location":[randint(60, 1250), randint(60, 690)],
+                        star_data = {"location":[randint(60, 1250), randint(60, 690)],
                                                      "size":randint(10, 20), 
                                                      "angle":randint(0, 359),
                                                      "direction": randint(0, 1),
                                                      "speed": randint(1, 10)/100,
                                                      "growth_phase": randint(0, 1),
                                                      "layer":randint(1, 3)}
-                    
+                        star_collect_animation(entity, star_data)
+                        level_stars[level_number] = star_data
+                        previous_time = time.time()
+                        
+                        
                     elif entity.type == 4: # Cam Trigger
                         if self.offset == [0, 0]:
                             self.offset[0], self.offset[1] = [entity.offset[0], entity.offset[1]]
@@ -1478,7 +1482,7 @@ allowed_objects = {}
 
 global current_track
 current_track = "MomentsBetween"
-segment = str(randint(1, 5))
+segment = str(1)
 
 global music_channel
 music_channel = pg.mixer.Channel(1)
@@ -1486,6 +1490,181 @@ music_channel = pg.mixer.Channel(1)
 music_channel.set_volume(master_volume*music_volume/100)
 music_channel.play(music[current_track][segment])
 
+def star_collect_animation(star:PowerUp, star_data):
+    global animation
+    global power_images
+    global d_time
+    global previous_time
+    
+    animation = True
+    temp_surface = pg.Surface([1280, 720], pg.SRCALPHA)
+    fade = pg.Surface([1280, 720], pg.SRCALPHA)
+    fade_alpha = 1
+    destination = [0, 0]
+    time_taken = 0
+    trail = False
+    frame = 0
+    ap = False
+    oob = False
+    explode = False
+    
+    
+    while animation:
+        temp_surface = pg.Surface([1280, 720], pg.SRCALPHA)
+        fade = pg.Surface([1280, 720], pg.SRCALPHA)
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                sys.exit(0)
+                
+            try:
+                if pg.key.get_just_pressed()[key_bindings["menu"]]:
+                    menu(True)
+                    current_time = time.time()
+                    d_time = 1/framerate
+                    previous_time = current_time                
+                        
+            except TypeError:
+                if isinstance(key_bindings["menu"], str):
+                    if pg.mouse.get_just_pressed()[int(key_bindings["menu"][-1])]:
+                        menu(True)
+                        current_time = time.time()
+                        d_time = 1/framerate
+                        previous_time = current_time
+      
+        
+        temp_surface.fill((25, 25, 75, 255))
+        
+        for platform in platforms:
+            platform.draw(temp_surface)
+        
+        for power in powerups:
+            power.draw(temp_surface)
+            
+        
+            
+        for sky_star in level_stars:
+            temp_star = deepcopy(power_images["star_idle"]["1"])
+            temp_star = pg.transform.scale(temp_star, [level_stars[sky_star]["size"], level_stars[sky_star]["size"]])
+            temp = pg.Surface([level_stars[sky_star]["size"], level_stars[sky_star]["size"]], pg.SRCALPHA)
+            temp.blit(temp_star)
+            temp = pg.transform.rotate(temp, level_stars[sky_star]["angle"])
+            
+            
+                    
+            draw_location = [level_stars[sky_star]["location"][0] - temp.get_width()/2, level_stars[sky_star]["location"][1] - temp.get_height()/2]
+                               
+                
+            temp_surface.blit(temp, draw_location)
+        
+        fade.fill((0, 0, 0, fade_alpha))
+        fade_alpha += (4/framerate)*60
+        fade_alpha = min(fade_alpha, 100)
+        temp_surface.blit(fade)
+        
+        if player != []:
+            player.draw(temp_surface)  
+        
+        if destination == [0, 0]: # Start of animation
+            destination = [truncate(player.location[0]+(0.5*player.width)-(star.width/2)), truncate(player.location[1]-star.height)]
+            x_diff = truncate(star.location[0] - destination[0], 3)
+            y_diff = truncate(star.location[1] - destination[1], 3)
+            time_taken = 1
+            
+        elif [round(star.location[0]), round(star.location[1])] == destination and time_taken >= framerate*2 and ap == False:
+            # If star is above head
+            destination[1] -= 720
+            x_diff = star.location[0] - destination[0]
+            y_diff = star.location[1] - destination[1]
+            trail = True
+            ap = True
+            
+        elif [round(star.location[0]), round(star.location[1])] == destination and  not time_taken >= framerate*2:
+            #making it pause above head
+            x_diff = 0
+            y_diff = 0   
+            
+        elif [round(star.location[0]), round(star.location[1])] == destination and time_taken >= framerate*2 and ap == True and explode == False and oob == False:
+            destination = star_data["location"]   
+            x_diff = truncate(star.location[0] - destination[0], 3)
+            y_diff = truncate(star.location[1] - destination[1], 3)
+            star.height = star.width
+            oob = True
+            
+        elif [round(star.location[0]), round(star.location[1])] == destination and oob == True and explode == False:
+            destination = star_data["location"]   
+            x_diff = 0
+            y_diff = 0
+            star.height = star.width
+            
+            explode = True
+            frame = 1
+            
+        elif [round(star.location[0]), round(star.location[1])] == destination and explode == True:
+            #making it stop at destination
+            x_diff = 0
+            y_diff = 0   
+        
+        
+        
+        star.location[0] -= x_diff/framerate
+        star.location[1] -= y_diff/framerate
+        
+        
+        if time_taken >= 1:
+            time_taken += 1
+        
+        if explode != True:
+            star.draw(temp_surface)
+            
+        if trail == True and ap == True and oob != True:
+            frame += (1/framerate) *60
+            frame = max(1, frame)
+            frame = int(frame)
+            if frame % 5 == 0:
+                star.width = max(4, star.width - 4)
+            try:
+                image = power_images["star_beam"][str(frame)]
+                image = pg.transform.scale(image, [star.width, image.height])
+                
+            except KeyError:
+                frame = 100
+                image = power_images["star_beam"][str(frame)]
+                image = pg.transform.scale(image, [star.width, image.height])
+            
+            temp_surface.blit(image, [star.location[0] , star.location[1] + star.height])
+            time.sleep(1)
+            
+        if explode == True:
+            frame += (1/framerate) *60
+            frame = max(1, frame)
+            frame = int(frame)
+            
+            try:
+                image = power_images["star_burst"][str(frame)]
+                temp_surface.blit(image, [star.location[0]-(image.width/2), star.location[1] - (image.height/2)])
+                
+            except KeyError:
+                return
+                
+            
+            
+        
+        ratio = min(screen_width/1280, screen_height/720)
+        
+        scaled_width = int(1280 * ratio)
+        scaled_height = int(720 * ratio)
+        
+        temp_surface = pg.transform.scale(temp_surface, [scaled_width, scaled_height])
+        center = [screen_width//2, screen_height//2]
+        
+        screen.get_surface().blit(temp_surface, [center[0] - scaled_width/2, center[1] - scaled_height/2])
+            
+        screen.flip()
+        clock.tick(framerate)
+        
+          
+                    
+    animation = False
  
 def main(): 
     
@@ -1496,6 +1675,11 @@ def main():
     global level_text
     
     global music_channel
+    
+    global animation
+    global previous_time
+    
+    animation = False
     
     for levels in os.walk("levels"):
         for level in levels[2]:
@@ -1987,16 +2171,16 @@ def main():
                         level_stars[star]["location"][1] += -(player.speed[1] + player.speed[1])*d_time*1.5
                         
                 if level_stars[star]["location"][0] < 0:
-                    level_stars[star]["location"][0] = screen_width
-                elif level_stars[star]["location"][0] > screen_width:
+                    level_stars[star]["location"][0] = pre_scaled.width
+                elif level_stars[star]["location"][0] > pre_scaled.width:
                     level_stars[star]["location"][0] = 0
                     
                 if level_stars[star]["location"][1] < 0:
-                    level_stars[star]["location"][1] = screen_height
-                elif level_stars[star]["location"][1] > screen_height:
+                    level_stars[star]["location"][1] = pre_scaled.height
+                elif level_stars[star]["location"][1] > pre_scaled.height:
                     level_stars[star]["location"][1] = 0
-                    
                 
+            
             pre_scaled.blit(temp, draw_location)
         
         # Scaling to actual display

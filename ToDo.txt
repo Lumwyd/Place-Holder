@@ -1,6 +1,7 @@
 
 Game Mechanics
-    -Pause for star collect animation
+    -Allow animation skipping
+    -make starburst bigger
 
 GUI
 
@@ -27,3 +28,5 @@ Art
     Add particles of some kind
 
     Make sound effects
+    -Star beam sound / sustained chord
+    -Star explosion time
