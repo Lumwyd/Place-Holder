@@ -347,6 +347,7 @@ def menu(saveable = False):
     current_menu = title_menu
     
     end = False
+    game_start = False
     while not end:
         events = pg.event.get(pg.MOUSEBUTTONDOWN)
         background = pg.transform.scale(other_images["background"],[screen_width, screen_height])
@@ -408,7 +409,8 @@ def menu(saveable = False):
                         
                         if item == "new_game":
                             if cont == False:
-                                main()
+                                game_start = True
+                                end = True
                             else:
                                 end = True
 
@@ -1056,6 +1058,9 @@ def menu(saveable = False):
             music_channel.set_volume(master_volume*music_volume/100)
             music_channel.play(music[current_track][segment])
         
+    if game_start == True:
+        main()
+        
 class Platform:
     def __init__(self, location, width, height, type = 0):
         self.location = location
@@ -1288,37 +1293,15 @@ class Player:
                             if entity.type == 5:
                                 level_number += 1
                                 max_level = max(level_number, max_level)
-                                for levels in os.walk("levels"):
-                                    for level in levels[2]:
-                                        if level.split("-")[0] == str(level_number):
+                                
+                                temp = deepcopy(screen.get_surface())
+                                temp = pg.transform.scale(temp, [1280, 720])
+                                stage_transition_animation(temp)
                                             
-                                            level_name = level.split("-")[1].removesuffix(".lvl")
-                                            save = open("levels\\"+ level, "rb")
-                                            load_level(save)
-                                            
-                                            if level_number in stars:
-                                                if stars[level_number]:
-                                                    for entity in powerups:
-                                                        if entity.type == 5:
-                                                            powerups.remove(entity)
-                                                            break
-                                                    to_remove = None
-                                                    for entity in allowed_objects:
-                                                        if isinstance(entity, PowerUp):
-                                                            if entity.type == 5:
-                                                                to_remove = entity
-                                                    if to_remove != None:
-                                                        allowed_objects.pop(to_remove)
-                                                                
-                                            if player != []:
-                                                player = player[0]
-                                            
-                                            font = pg.font.SysFont("Comic Sans", 50)
-                                            temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
-                                            level_text = {}
-                                            level_text[temp] = [5, 5]
-                                            break
-                        
+                                font = pg.font.SysFont("Comic Sans", 50)
+                                temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
+                                level_text = {}
+                                level_text[temp] = [5, 5]                        
                             
                             self.on_ground = True
                             Bottom_collide = True
@@ -1540,8 +1523,6 @@ def star_collect_animation(star:PowerUp, star_data):
     global previous_time
     
     animation = True
-    temp_surface = pg.Surface([1280, 720], pg.SRCALPHA)
-    fade = pg.Surface([1280, 720], pg.SRCALPHA)
     fade_alpha = 1
     destination = [0, 0]
     time_taken = 0
@@ -1659,11 +1640,10 @@ def star_collect_animation(star:PowerUp, star_data):
         star.location[0] -= x_diff/framerate
         star.location[1] -= y_diff/framerate
         
+        star.draw(temp_surface)
         
         if time_taken >= 1:
             time_taken += 1
-        
-        star.draw(temp_surface)
             
         if trail == True and ap == True and oob != True:
             frame += (1/framerate) *60
@@ -1714,7 +1694,204 @@ def star_collect_animation(star:PowerUp, star_data):
         clock.tick(framerate)
         
           
+    previous_time = time.time()        
+    animation = False
+ 
+def stage_transition_animation(pre_trans_surface: pg.Surface):
+    global animation
+    global power_images
+    global d_time
+    global previous_time
+    global time_taken
+    
+    global player
+    global level_number
+    global level_name
+    
+    animation = True
+    time_taken = 0
+    size = 1280
+    
+    shrink = True
+    grow = False
+    
+    while animation:
+        temp_surface = pg.Surface([1280, 720], pg.SRCALPHA)
+        iris_surface = pg.Surface([1280, 720], pg.SRCALPHA)
+        location = [640, 360]
+        
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                sys.exit(0)
+                
+            try:
+                if pg.key.get_just_pressed()[key_bindings["menu"]]:
+                    for levels in os.walk("levels"):
+                        for level in levels[2]:
+                            if level.split("-")[0] == str(level_number):
+                                
+                                level_name = level.split("-")[1].removesuffix(".lvl")
+                                save = open("levels\\"+ level, "rb")
+                                load_level(save)
+                                if level_number in stars:
+                                    if stars[level_number]:
+                                        for entity in powerups:
+                                            if entity.type == 5:
+                                                powerups.remove(entity)
+                                                break
+                                        to_remove = None
+                                        for entity in allowed_objects:
+                                            if isinstance(entity, PowerUp):
+                                                if entity.type == 5:
+                                                    to_remove = entity
+                                        if to_remove != None:
+                                            allowed_objects.pop(to_remove)
+                                            
+                                if len(player) == 1:
+                                    player = player[0]
+                                break
+
+                    menu(True)
+                    current_time = time.time()
+                    d_time = 1/framerate
+                    previous_time = current_time                
+                        
+            except TypeError:
+                if isinstance(key_bindings["menu"], str):
+                    if pg.mouse.get_just_pressed()[int(key_bindings["menu"][-1])]:
+                        for level in levels[2]:
+                            if level.split("-")[0] == str(level_number):
+                                
+                                level_name = level.split("-")[1].removesuffix(".lvl")
+                                save = open("levels\\"+ level, "rb")
+                                load_level(save)
+                                if level_number in stars:
+                                    if stars[level_number]:
+                                        for entity in powerups:
+                                            if entity.type == 5:
+                                                powerups.remove(entity)
+                                                break
+                                        to_remove = None
+                                        for entity in allowed_objects:
+                                            if isinstance(entity, PowerUp):
+                                                if entity.type == 5:
+                                                    to_remove = entity
+                                        if to_remove != None:
+                                            allowed_objects.pop(to_remove)
+                                            
+                                if len(player) == 1:
+                                    player = player[0]
+                                break
+                        menu(True)
+                        current_time = time.time()
+                        d_time = 1/framerate
+                        previous_time = current_time
+
+        temp_surface.fill((25, 25, 75, 255))
+        iris_surface.fill((0, 0, 0, 255))
+            
+        if shrink == True:
+            if player != []:  
+                location = [player.location[0] + (0.5*player.width), player.location[1] + (0.5*player.height)]
+            temp_surface.blit(pre_trans_surface)
+            pg.draw.circle(iris_surface, (0, 0, 0, 0), location, size)
+            size -= 21*60/framerate
+            size = max(size, 0)
+            
+        if grow == True:
+            for platform in platforms:
+                platform.draw(temp_surface)
+                
+            allowed_images = {}
+            for thing in allowed_objects:
+                temp_surface = pg.Surface([thing.width, thing.height])
+                thing.location = [0, 0]
+                if allowed_objects[thing] == 0:
+                    temp_surface.fill((70, 70, 70))
+                else:
+                    thing.draw(temp_surface)
+                ratio = 80 / max(thing.width, thing.height) 
+                temp_surface = pg.transform.scale_by(temp_surface, ratio)
+                allowed_images[temp_surface] = thing
+            
+            start_x = 20
+            i = 0
+            for image in allowed_images:
                     
+                center = image.get_height()/2
+                temp_surface.blit(image, [start_x + (100 * i), 50 - center])
+                font = pg.font.SysFont("Comic Sans", 20)
+                number = allowed_objects[allowed_images[image]]
+                number = font.render(str(number), True, (180, 200, 180))
+                temp_surface.blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
+                i += 1
+            
+        
+            for power in powerups:
+                power.draw(temp_surface)
+            
+            if player != []:
+                player.draw(temp_surface)  
+                location = [player.location[0] + (0.5*player.width), player.location[1] + (0.5*player.height)]
+                
+            pg.draw.circle(iris_surface, (0, 0, 0, 0), location, size)
+            size += 21*60/framerate
+            size = min(size, 1280)
+            
+        temp_surface.blit(iris_surface)
+        
+        if shrink == True and size == 0 and time_taken == 0:
+            time_taken = 1
+        
+        elif shrink == True and size == 0 and time_taken >= framerate:
+            shrink = False
+            grow  = True
+            
+            for levels in os.walk("levels"):
+                for level in levels[2]:
+                    if level.split("-")[0] == str(level_number):
+                        
+                        level_name = level.split("-")[1].removesuffix(".lvl")
+                        save = open("levels\\"+ level, "rb")
+                        load_level(save)
+                        if level_number in stars:
+                            if stars[level_number]:
+                                for entity in powerups:
+                                    if entity.type == 5:
+                                        powerups.remove(entity)
+                                        break
+                                to_remove = None
+                                for entity in allowed_objects:
+                                    if isinstance(entity, PowerUp):
+                                        if entity.type == 5:
+                                            to_remove = entity
+                                if to_remove != None:
+                                    allowed_objects.pop(to_remove)
+                                    
+                        if len(player) == 1:
+                            player = player[0]
+                        break
+
+        if grow == True and size == 1280:
+            animation = False
+            
+        if time_taken >= 1:
+            time_taken += 1
+            
+        ratio = min(screen_width/1280, screen_height/720)
+        
+        scaled_width = int(1280 * ratio)
+        scaled_height = int(720 * ratio)
+        
+        temp_surface = pg.transform.scale(temp_surface, [scaled_width, scaled_height])
+        center = [screen_width//2, screen_height//2]
+        
+        screen.get_surface().blit(temp_surface, [center[0] - scaled_width/2, center[1] - scaled_height/2])
+            
+        screen.flip()
+        clock.tick(framerate)
+    
+    previous_time = time.time()
     animation = False
  
 def main(): 
@@ -1730,34 +1907,16 @@ def main():
     global animation
     global previous_time
     
-    animation = False
+    global music_offset
+    global level_number
     
-    for levels in os.walk("levels"):
-        for level in levels[2]:
-            if level.split("-")[0] == str(level_number):
-                
-                level_name = level.split("-")[1].removesuffix(".lvl")
-                save = open("levels\\"+ level, "rb")
-                load_level(save)
-                if level_number in stars:
-                    if stars[level_number]:
-                        for entity in powerups:
-                            if entity.type == 5:
-                                powerups.remove(entity)
-                                break
-                        to_remove = None
-                        for entity in allowed_objects:
-                            if isinstance(entity, PowerUp):
-                                if entity.type == 5:
-                                    to_remove = entity
-                        if to_remove != None:
-                            allowed_objects.pop(to_remove)
-                break
-            
+    music_offset = 0
     
+    animation = False         
     
-    if len(player) == 1:
-        player = player[0]
+    temp = deepcopy(screen.get_surface())
+    temp = pg.transform.scale(temp, [1280, 720])
+    stage_transition_animation(temp)
     
     global cont
     cont = True
@@ -2046,70 +2205,25 @@ def main():
             
         try:
             if pg.key.get_pressed()[key_bindings["reset"]]:
-                for levels in os.walk("levels"):
-                    for level in levels[2]:
-                        if level.split("-")[0] == str(level_number):
-                            
-                            level_name = level.split("-")[1].removesuffix(".lvl")
-                            save = open("levels\\"+ level, "rb")
-                            load_level(save)
-                            level_text[temp] = [5, 5]
-                            
-                            if level_number in stars:
-                                if stars[level_number]:
-                                    for entity in powerups:
-                                        if entity.type == 5:
-                                            powerups.remove(entity)
-                                            break
-                                    to_remove = None
-                                    for entity in allowed_objects:
-                                        if isinstance(entity, PowerUp):
-                                            if entity.type == 5:
-                                                to_remove = entity
-                                    if to_remove != None:
-                                        allowed_objects.pop(to_remove)
-                            level_text = {}
-                            font = pg.font.SysFont("Comic Sans", 50)
-                            temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
-                            level_text[temp] = [5, 5]
-                            break
-                
-                if len(player) == 1:
-                    player = player[0]
+                temp = deepcopy(screen.get_surface())
+                temp = pg.transform.scale(temp, [1280, 720])
+                stage_transition_animation(temp)
+                level_text = {}
+                font = pg.font.SysFont("Comic Sans", 50)
+                temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
+                level_text[temp] = [5, 5]
                     
         except TypeError:
             if isinstance(key_bindings["reset"], str):
                 if pg.mouse.get_pressed()[int(key_bindings["reset"][-1])]:
-                    for levels in os.walk("levels"):
-                        for level in levels[2]:
-                            if level.split("-")[0] == str(level_number):
-                                
-                                level_name = level.split("-")[1].removesuffix(".lvl") 
-                                save = open("levels\\"+ level, "rb")
-                                load_level(save)
-                                
-                                if level_number in stars:
-                                    if stars[level_number]:
-                                        for entity in powerups:
-                                            if entity.type == 5:
-                                                powerups.remove(entity)
-                                                break
-                                        to_remove = None
-                                        for entity in allowed_objects:
-                                            if isinstance(entity, PowerUp):
-                                                if entity.type == 5:
-                                                    to_remove = entity
-                                        if to_remove != None:
-                                            allowed_objects.pop(to_remove)
-                                level_text = {}
-                                font = pg.font.SysFont("Comic Sans", 50)
-                                temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
-                                level_text[temp] = [5, 5]
-                                break
+                    temp = deepcopy(screen.get_surface())
+                    temp = pg.transform.scale(temp, [1280, 720])
+                    stage_transition_animation(temp)
+                    level_text = {}
+                    font = pg.font.SysFont("Comic Sans", 50)
+                    temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
+                    level_text[temp] = [5, 5]                    
                     
-                    if len(player) == 1:
-                        player = player[0]
-              
         try:
             if pg.key.get_just_pressed()[key_bindings["menu"]]:
                 menu(True)
@@ -2195,6 +2309,8 @@ def main():
             if player.flow_mult > 0:
                 flow_ratio = ((player.flow_mult-1)/5)*100
                 
+                music_offset = -flow_ratio
+                music_channel.set_volume(((master_volume*music_volume)+music_offset)/100)
                 vignette_alpha =  min(0.9*vignette_alpha + 0.1*max(min(50*flow_ratio, 255), 0), 200)
                 cutout_size[0] = max(0.1*(1280*(1-flow_ratio/40) ) + (0.9*cutout_size[0]), 0.75*1280)
                 cutout_size[1] = max(0.1*(720*(1-flow_ratio/40)) + (0.9*cutout_size[1]), 0.75*720)
