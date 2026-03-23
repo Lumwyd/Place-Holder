@@ -1,4 +1,4 @@
-fullscreen:0
+fullscreen:1
 framerate:60
 resolution:1360X770
 

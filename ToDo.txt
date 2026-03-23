@@ -1,8 +1,5 @@
 
 Game Mechanics
-    -Add an animation for the end of stage
-    -Fix iris animation being flooded with selected objects
-    -Make the game start updating once iris out starts
 
 GUI
 
@@ -27,8 +24,6 @@ Art
     Animate Player
     Texture start Platform
     Texture moving platform
-    Texture spikes
-    Add particles of some kind
 
     Make sound effects
 

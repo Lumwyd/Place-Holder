@@ -61,6 +61,8 @@ for line in options.readlines():
 
 options.close()
 
+resolution = "1920X1080"
+
 # loading images
 player_images = {}
 platform_images = {}
@@ -249,12 +251,33 @@ def menu(saveable = False):
     
     
     save_count = 0
-    saves = []
+    unsorted_saves = []
     for file in os.listdir("levels"):
         if file.endswith(".lvl"):
             save_count += 1
-            saves.append(file)
+            unsorted_saves.append(file)
     
+    saves = [unsorted_saves[0]]
+    unsorted_saves.pop(0)
+    
+    for level in unsorted_saves:
+        sorted_index = len(saves) - 1
+        
+        while float(level.split("-")[0]) < float(saves[sorted_index].split("-")[0]):
+            if sorted_index == len(saves) - 1:
+                saves.append(saves[sorted_index])
+            else:
+                saves[sorted_index + 1] = save[sorted_index]
+            
+            sorted_index -= 1
+            if sorted_index == -1:
+                break
+                
+        if sorted_index == len(saves) - 1:
+            saves.append(level)
+        else:
+            saves[sorted_index + 1] = level
+           
     
     load_menu = {"back_tm": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  ")}
     for i in range(save_count):
@@ -831,6 +854,8 @@ class Player:
         
         self.frame = 1
         
+        self.air_jump = False
+        
     def draw(self):
         pg.draw.rect(screen.get_surface(), (220, 255, 220), (self.location, (self.width, self.height)))
     
@@ -1092,6 +1117,12 @@ def main():
                             if open_menu[item].get_focused(mouse_position) and (pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]):
                                 
                                 if item == "width" and len(selected_objects) == 1 and selected_object == None:
+                                    if selected_objects[0].type == 4 and isinstance(selected_objects[0], PowerUp):
+                                        open_menu["width"].slider_max = 1500
+                                        open_menu["height"].slider_max = 1500
+                                    else:
+                                        open_menu["width"].slider_max = 500
+                                        open_menu["height"].slider_max = 500
                                     temp = open_menu[item].get_focused(mouse_position)
                                     
                                     if temp[0]:
@@ -1109,6 +1140,12 @@ def main():
                                         selected_objects[0].width = selected_width
                                         
                                 if item == "height" and len(selected_objects) == 1 and selected_object == None:
+                                    if selected_objects[0].type == 4 and isinstance(selected_objects[0], PowerUp):
+                                        open_menu["width"].slider_max = 1500
+                                        open_menu["height"].slider_max = 1500
+                                    else:
+                                        open_menu["width"].slider_max = 500
+                                        open_menu["height"].slider_max = 500    
                                     
                                     temp = open_menu[item].get_focused(mouse_position)
                                     
@@ -1331,6 +1368,9 @@ def main():
             if powerup.type == 2:
                 if not "-fog-" in powerup.tags:
                     powerup.tags += "-fog-"
+            else:
+                if "-fog-" in powerup.tags:
+                    powerup.tags = powerup.tags.replace("-fog-", "")
             
         for platform in platforms:
             platform.draw()
@@ -1339,6 +1379,7 @@ def main():
         for play_er in player:
             play_er.draw()
             play_er.frame = 1
+            play_er.air_jump = False
         
         temp_dict = {}
         to_remove = []
