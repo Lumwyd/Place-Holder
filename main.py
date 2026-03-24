@@ -1229,7 +1229,6 @@ class Player:
     def update(self, entity_list, d_time):
         global platforms
         global powerups
-        global player
         global allowed_objects
         global level_number
         global level_name
@@ -1243,6 +1242,7 @@ class Player:
         
         self.cayote_timer += d_time
         self.frame += d_time*60
+        
         
         if self.dash_timer >= 0:
             self.crouched = True
@@ -1389,12 +1389,12 @@ class Player:
                         hori, vert = 0, 0
                         if self.offset == [0, 0] and not "-triggered-" in entity.tags:
                             
-                            if self.centre[1] > entity.centre[1]:
+                            if 360 > entity.centre[1]:
                                 vert = -1
                             else:
                                 vert = 1
                                 
-                            if self.centre[0] > entity.centre[0]:
+                            if 640 > entity.centre[0]:
                                 hori = -1
                             else:
                                 hori = 1
@@ -1875,9 +1875,11 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                                 if isinstance(selected_object, Player):
                                     player = []
                                 elif isinstance(selected_object, Platform):
-                                    platforms.remove(selected_object)
+                                    if selected_object in platforms:
+                                        platforms.remove(selected_object)
                                 elif isinstance(selected_object, PowerUp):
-                                    powerups.remove(selected_object)
+                                    if selected_object in powerups:
+                                        powerups.remove(selected_object)
                 
                         i += 1
                     
@@ -1895,9 +1897,11 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                                         if isinstance(selected_object, Player):
                                             player = []
                                         elif isinstance(selected_object, Platform):
-                                            platforms.remove(selected_object)
+                                            if selected_object in platforms:
+                                                platforms.remove(selected_object)
                                         elif isinstance(selected_object, PowerUp):
-                                            powerups.remove(selected_object)
+                                            if selected_object in powerups:
+                                                powerups.remove(selected_object)
                 
                 if selected_object != None:
                     selected_object.tags = selected_object.tags.replace("-no_collide-", "")
@@ -2134,7 +2138,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                         level_name = level.split("-")[1].removesuffix(".lvl")
                         save = open("levels\\"+ level, "rb")
                         load_level(save)
-                        if level_number in stars:
+                        if level_number in list(stars.keys()):
                             if stars[level_number]:
                                 for entity in powerups:
                                     if entity.type == 5:
@@ -2181,7 +2185,8 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                     level_name = level.split("-")[1].removesuffix(".lvl")
                     save = open("levels\\"+ level, "rb")
                     load_level(save)
-                    if level_number in stars:
+                    print(level_number)
+                    if level_number in list(stars.keys()):
                         if stars[level_number]:
                             for entity in powerups:
                                 if entity.type == 5:
@@ -2345,9 +2350,11 @@ def main():
                                 if isinstance(selected_object, Player):
                                     player = []
                                 elif isinstance(selected_object, Platform):
-                                    platforms.remove(selected_object)
+                                    if selected_object in platforms:
+                                        platforms.remove(selected_object)
                                 elif isinstance(selected_object, PowerUp):
-                                    powerups.remove(selected_object)
+                                    if selected_object in powerups:
+                                        powerups.remove(selected_object)
                 
                         i += 1
                     
@@ -2365,9 +2372,11 @@ def main():
                                         if isinstance(selected_object, Player):
                                             player = []
                                         elif isinstance(selected_object, Platform):
-                                            platforms.remove(selected_object)
+                                            if selected_object in platforms:
+                                                platforms.remove(selected_object)
                                         elif isinstance(selected_object, PowerUp):
-                                            powerups.remove(selected_object)
+                                            if selected_object in powerups:
+                                                powerups.remove(selected_object)
                 
                 if selected_object != None:
                     selected_object.tags = selected_object.tags.replace("-no_collide-", "")
@@ -2621,7 +2630,7 @@ def main():
             player.draw(pre_scaled)
             player.update(platforms+powerups, d_time)
             
-            if player.flow_mult > 0:
+            if player.flow_mult > 0 and player != []:
                 flow_ratio = ((player.flow_mult-1)/5)*100
                 
                 music_dim = 0.1*(1/max(flow_ratio, 1)) + 0.9*music_dim
