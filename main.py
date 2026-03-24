@@ -1092,6 +1092,7 @@ class Platform:
         self.type = type
         self.start = [self.location[0], self.location[1]]
         self.offset = [0, 0]
+        self.direction = [0, 0]
         
         self.passengers = []
         
@@ -1103,23 +1104,26 @@ class Platform:
     def draw(self, surface = screen.get_surface()):
         global d_time
         self.frame += d_time*60
-        if self.type == 0:
+        if self.type == 0: # Default
             pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
-        elif self.type == 1:
+        elif self.type == 1: # Moving Platform
             pg.draw.rect(surface, (240, 50, 240), (self.location, (self.width, self.height)))
-        elif self.type == 2:
+        elif self.type == 2: # Murder
             pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)))
-        elif self.type == 3:
+        elif self.type == 3: # Gray
             pg.draw.rect(surface, (50, 50, 50), (self.location, (self.width, self.height)))
-        elif self.type == 4:
+        elif self.type == 4: # Start Platform
             pg.draw.rect(surface, (50, 240, 50), (self.location, (self.width, self.height)))
-        elif self.type == 5:
+        elif self.type == 5: # End Platform
             image = platform_images["end"]
             image = pg.transform.scale(image, [self.width, self.height])
             surface.blit(image, (self.location))
         
     def update(self):
         global d_time
+        if self.type == 1:
+            pass
+        
         if self.type == 1 and "-moving_end-" in self.tags:
             
             destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
@@ -2635,14 +2639,15 @@ def main():
             player.draw(pre_scaled)
             player.update(platforms+powerups, d_time)
             
-            if player.flow_mult > 0 and player != []:
-                flow_ratio = ((player.flow_mult-1)/5)*100
-                
-                music_dim = 0.1*(1/max(flow_ratio, 1)) + 0.9*music_dim
-                music_channel.set_volume(((master_volume*music_volume)*music_dim)/100)
-                vignette_alpha =  min(0.9*vignette_alpha + 0.1*max(min(50*flow_ratio, 255), 0), 200)
-                cutout_size[0] = max(0.1*(1280*(1-flow_ratio/40) ) + (0.9*cutout_size[0]), 0.75*1280)
-                cutout_size[1] = max(0.1*(720*(1-flow_ratio/40)) + (0.9*cutout_size[1]), 0.75*720)
+            if player != []:
+                if player.flow_mult > 0:
+                    flow_ratio = ((player.flow_mult-1)/5)*100
+                    
+                    music_dim = 0.1*(1/max(flow_ratio, 1)) + 0.9*music_dim
+                    music_channel.set_volume(((master_volume*music_volume)*music_dim)/100)
+                    vignette_alpha =  min(0.9*vignette_alpha + 0.1*max(min(50*flow_ratio, 255), 0), 200)
+                    cutout_size[0] = max(0.1*(1280*(1-flow_ratio/40) ) + (0.9*cutout_size[0]), 0.75*1280)
+                    cutout_size[1] = max(0.1*(720*(1-flow_ratio/40)) + (0.9*cutout_size[1]), 0.75*720)
         
         vignette.fill((100, 255, 100, vignette_alpha))
         pg.draw.ellipse(vignette, (0, 0, 0, 0), [[640 - (cutout_size[0]/2), 360 - (cutout_size[1]/2)], cutout_size])
