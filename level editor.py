@@ -260,23 +260,23 @@ def menu(saveable = False):
     saves = [unsorted_saves[0]]
     unsorted_saves.pop(0)
     
-    for level in unsorted_saves:
+    for save in unsorted_saves:
         sorted_index = len(saves) - 1
         
-        while float(level.split("-")[0]) < float(saves[sorted_index].split("-")[0]):
+        while float(save.split("-")[0]) < float(saves[sorted_index].split("-")[0]):
             if sorted_index == len(saves) - 1:
                 saves.append(saves[sorted_index])
             else:
-                saves[sorted_index + 1] = save[sorted_index]
+                saves[sorted_index + 1] = saves[sorted_index]
             
             sorted_index -= 1
             if sorted_index == -1:
                 break
                 
         if sorted_index == len(saves) - 1:
-            saves.append(level)
+            saves.append(save)
         else:
-            saves[sorted_index + 1] = level
+            saves[sorted_index + 1] = save
            
     
     load_menu = {"back_tm": button(screen, 0.25, 0.1, [0.875, 0.05], outer, inner, "  Back  ")}

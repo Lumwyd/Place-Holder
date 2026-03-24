@@ -1272,8 +1272,8 @@ class Player:
         else:
             self.flow_mult = 1
             
-        if self.speed[1] >= 14.5:
-            self.speed[1] = 14.5
+        if self.speed[1] >= 10:
+            self.speed[1] = 10
                 
         self.location[0] += self.speed[0]*self.flow_mult*d_time*60
         self.location[1] += self.speed[1]*self.flow_mult*d_time*60
@@ -1361,6 +1361,10 @@ class Player:
                         self.cayote_timer = 0
                         powerups.remove(entity)
                     elif entity.type == 1: #Dash Crystal
+                        if self.jump_enabled:
+                            self.jump_allowed = True
+                            self.air_jump = True
+                            self.cayote_timer = 0
                         self.max_dashes += 1
                         self.dashes = self.max_dashes  
                         powerups.remove(entity)   
@@ -1459,6 +1463,7 @@ class Player:
         if self.dead:
             self.height = 30
             self.width = 55
+            self.speed[0] = 0
  
 class PowerUp:
     def __init__(self, location, type):

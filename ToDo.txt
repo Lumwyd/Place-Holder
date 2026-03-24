@@ -4,20 +4,22 @@ Game Mechanics
 GUI
 
 Levels
-    Teach jump
-    Teach Dash + Placement
-    Use jump + dash
-    Use Platform cycling
-    Make player place self at end
-    Use flow mult
-    Use jump extend
-    Double Jump
-    Dash stacking
-    Use Moving platforms
-    Conveyer
-    Single platform cycling
-    teach flow cycling
-    use flow mult again, but with more agency
+    Teach jump - Done - 1
+    Teach Dash + Placement - Done - 2
+    Use Platform cycling - Done - 3
+    Single platform cycling - Done - 4
+    Make player place self at end - Done - 5
+    Double Jump - Done - 6
+    Dash stacking - Done - 7
+    Use jump + dash - Done - 8
+    use jump to refresh dash - 9
+    Use crouch extend - Done - 10
+    Use Moving platforms - Done -11
+    Conveyer - Done - 12
+    Compactor - 13
+    Use flow mult - Done - 14 / Edit to include double jump + dash + maintaining flow
+    use flow mult again, but with more agency - 15
+    teach flow cycling - For much later - 16
 
 Art
     Texture Player
@@ -26,5 +28,7 @@ Art
     Texture moving platform
 
     Make sound effects
+
+    Make Infographics
 
 Misc
