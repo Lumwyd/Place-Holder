@@ -69,8 +69,29 @@ other_images = {}
 for image in os.walk("assets\\images"):
     
     if image[0] == "assets\\images\\player":
-        for frame in image[2]:
-            player_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+frame)
+        for player_image in image[2]:
+            if len(player_image.split("_")) > 1:
+                root = player_image.split("_")[0]
+                frame = player_image.removesuffix(".png").split("_")[1]
+                
+                try:
+                    player_images[root][frame] = pg.image.load("assets\\images\\player\\"+player_image)
+                except KeyError:
+                    player_images[root] = {}
+                    player_images[root][frame] = pg.image.load("assets\\images\\player\\"+player_image)
+            else:
+                player_images[player_image.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+player_image)
+         
+        
+        for root in image[1]:
+            for frames in os.walk("assets\\images\\player\\"+root):
+                frames = frames[2]
+                for frame in frames:
+                    try:
+                        player_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+root+"\\"+frame)
+                    except KeyError:
+                        player_images[root] = {}
+                        player_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+root+"\\"+frame)
     
     elif image[0] == "assets\\images\\platforms":
         for platform in image[2]:
@@ -85,6 +106,17 @@ for image in os.walk("assets\\images"):
                     platform_images[root][frame] = pg.image.load("assets\\images\\platforms\\"+platform)
             else:
                 platform_images[platform.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+platform)
+         
+        
+        for root in image[1]:
+            for frames in os.walk("assets\\images\\platforms\\"+root):
+                frames = frames[2]
+                for frame in frames:
+                    try:
+                        platform_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+root+"\\"+frame)
+                    except KeyError:
+                        platform_images[root] = {}
+                        platform_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+root+"\\"+frame)
     
     elif image[0] == "assets\\images\\power_ups":        
         for power in image[2]:
@@ -110,13 +142,40 @@ for image in os.walk("assets\\images"):
                     except KeyError:
                         power_images[root] = {}
                         power_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+root+"\\"+frame)
+    
     else:
-        if image[0].count("\\") >= 2:
+        if image[0].count("\\") > 2:
             pass
         else:
-            for o_i in image[2]:
-                other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
+            for other_image in image[2]:
+                if len(other_image.split("_")) > 1:
+                    root = other_image.split("_")[0]
+                    frame = other_image.removesuffix(".png").split("_")[1]
+                    
+                    try:
+                        other_images[root][frame] = pg.image.load("assets\\images\\"+other_image)
+                    except KeyError:
+                        other_images[root] = {}
+                        other_images[root][frame] = pg.image.load("assets\\images\\"+other_image)
+                else:
+                    try:
+                        other_images[other_image.removesuffix(".png")] = pg.image.load("assets\\images\\"+other_image)
+                    except FileNotFoundError:
+                        pass
             
+            
+            for root in image[1]:
+                if root in ["platforms", "power_ups", "player"]:
+                    continue
+                for frames in os.walk("assets\\images\\"+root):
+                    frames = frames[2]
+                    for frame in frames:
+                        try:
+                            other_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\"+root+"\\"+frame)
+                        except KeyError:
+                            other_images[root] = {}
+                            other_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\"+root+"\\"+frame)
+                
 other_sounds = {}
 player_sounds = {}
 platform_sounds = {}
@@ -241,6 +300,7 @@ def menu(saveable = False):
     global music_channel
     
     global animation
+    global level_13
     
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
@@ -556,7 +616,8 @@ def menu(saveable = False):
                             
                             level_number, level_name = level_menu[item].text.split("-")
                             level_number = int(level_number)
-                            
+                            if level_number == 13:
+                                level_13 = True
                             font = pg.font.SysFont("Comic Sans", 50)
                             temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
                             level_text = {}
@@ -1093,6 +1154,8 @@ class Platform:
         self.start = [self.location[0], self.location[1]]
         self.offset = [0, 0]
         self.direction = [0, 0]
+        self.reverse = False
+        self.speed = 1
         
         self.passengers = []
         
@@ -1103,11 +1166,353 @@ class Platform:
         
     def draw(self, surface = screen.get_surface()):
         global d_time
-        self.frame += d_time*60
         if self.type == 0: # Default
             pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
         elif self.type == 1: # Moving Platform
-            pg.draw.rect(surface, (240, 50, 240), (self.location, (self.width, self.height)))
+            if self.frame >= 2:
+                self.frame += d_time*60
+            frame = str(int(self.frame))
+                
+            direction = (degrees(angle_from_vector(self.offset)) + 90)%360
+            if "-moving_start-" in self.tags and (self.frame == 1 or self.reverse):
+                direction += 180
+                direction %= 360
+                
+            elif "-moving_end-" in self.tags and self.reverse and int(frame) >= 2:
+                direction += 180
+                direction %= 360 
+                
+                
+                
+            if 22.5 < direction <= 67.5: # up-right
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                else:
+                    folder = "moving_otc"
+                    
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+            
+            elif 67.5 < direction <= 112.5: # right
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                else:
+                    folder = "moving_otc"
+                    
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, -90)
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+            
+            elif 112.5 < direction <= 157.5: # down-right
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, -90)
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+                
+            elif 157.5 < direction <= 202.5: # down
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                else:
+                    folder = "moving_otc"
+                    
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 180)
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+                
+            elif 202.5 < direction <= 247.5: # down-left
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                        
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 180)
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+                
+            elif 247.5 < direction <= 292.5: # left
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                        
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 90)
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+                
+            elif 292.5 < direction <= 337.5: # up-left
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 90)
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+            
+            elif 337.5 < direction < 360 or 0 <= direction <= 22.5: # up
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                else:
+                    folder = "moving_otc"
+                        
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                      
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+                
+            else:
+                temp = platform_images["moving_cto"]["1"]
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+                
         elif self.type == 2: # Murder
             pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)))
         elif self.type == 3: # Gray
@@ -1124,19 +1529,24 @@ class Platform:
         if self.type == 1:
             pass
         
-        if self.type == 1 and "-moving_end-" in self.tags:
+        if self.type == 1 and "-moving_end-" in self.tags and self.frame == 1:
             
             destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
             
             x_diff = destination[0] - self.start[0]
             y_diff = destination[1] - self.start[1]
             
-            self.location[0] += x_diff*d_time/10
-            self.location[1] += y_diff*d_time/10
+            self.location[0] += x_diff*(d_time/10)*self.speed
+            self.location[1] += y_diff*(d_time/10)*self.speed
             
             for passenger in self.passengers:
-                passenger.location[0] += x_diff*d_time/10
-                passenger.location[1] += y_diff*d_time/10
+                if isinstance(passenger, Player):
+                    passenger.platform_speed = [x_diff*(d_time/10)*self.speed, y_diff*(d_time/10)*self.speed]
+                passenger.location[0] += x_diff*(d_time/10)*self.speed
+                passenger.location[1] += y_diff*(d_time/10)*self.speed
+                passenger.centre = [passenger.location[0] + passenger.width/2, passenger.location[1] + passenger.height/2]
+                if isinstance(passenger, Platform) or isinstance(passenger, Player):
+                    passenger.start = [passenger.location[0], passenger.location[1]]
             
             self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
             
@@ -1156,19 +1566,23 @@ class Platform:
                     
             if self.location == destination:
                 self.tags = self.tags.replace("-moving_end-", "-moving_start-")
+                self.frame = 2
             
-        if self.type == 1 and "-moving_start-" in self.tags:
+        elif self.type == 1 and "-moving_start-" in self.tags and self.frame == 1:
             destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
             
             x_diff = self.start[0] - destination[0]
             y_diff = self.start[1] - destination[1]
             
-            self.location[0] += x_diff*d_time/10
-            self.location[1] += y_diff*d_time/10
+            self.location[0] += x_diff*(d_time/10)*self.speed
+            self.location[1] += y_diff*(d_time/10)*self.speed
             
             for passenger in self.passengers:
-                passenger.location[0] += x_diff*d_time/10
-                passenger.location[1] += y_diff*d_time/10
+                if isinstance(passenger, Player):
+                    passenger.platform_speed = [x_diff*(d_time/10)*self.speed, y_diff*(d_time/10)*self.speed]
+                
+                passenger.location[0] += x_diff*(d_time/10)*self.speed
+                passenger.location[1] += y_diff*(d_time/10)*self.speed
                 passenger.centre = [passenger.location[0] + passenger.width/2, passenger.location[1] + passenger.height/2]
                 if isinstance(passenger, Platform) or isinstance(passenger, Player):
                     passenger.start = [passenger.location[0], passenger.location[1]]
@@ -1191,6 +1605,8 @@ class Platform:
                     
             if self.location == self.start:
                 self.tags = self.tags.replace("-moving_start-", "-moving_end-")
+                self.frame = 2
+                self.reverse = True
                  
 class Player:
     def __init__(self, location):
@@ -1215,6 +1631,8 @@ class Player:
         self.offset = [0, 0]
         self.start = [self.location[0], self.location[1]]
         self.frame = 0
+        
+        self.platform_speed = [0, 0]
         
         self.air_jump = False
         
@@ -1268,8 +1686,11 @@ class Player:
             
             if vector_magnitude(self.dash_speed) == 0:
                 self.dash_timer = -1
-                
+             
         flow_speed = [self.speed[0] + self.dash_speed[0], min(self.speed[1], 0) + self.dash_speed[1]]
+        if self.on_ground == False and self.speed[1] < 0 and not self.crouched:
+            flow_speed[0] += self.platform_speed[0]
+            flow_speed[1] += self.platform_speed[1]
         
         if vector_magnitude(flow_speed) > 0:
             self.flow_mult += self.flow_mult*0.035*d_time
@@ -1283,6 +1704,11 @@ class Player:
         self.location[1] += self.speed[1]*self.flow_mult*d_time*60
         self.location[0] += self.dash_speed[0]*self.flow_mult*d_time*60
         self.location[1] += self.dash_speed[1]*self.flow_mult*d_time*60
+        if self.on_ground == False and self.speed[1] < 0 and not self.crouched:
+            self.location[0] += self.platform_speed[0]*d_time*60
+            self.location[1] += self.platform_speed[1]*d_time*60
+            self.platform_speed[0] -= 2.3*self.platform_speed[0]*d_time
+            self.platform_speed[1] -= 2.3*self.platform_speed[1]*d_time
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         
         if self.cayote_timer >= 0.204:
@@ -1310,6 +1736,7 @@ class Player:
                     y_diff = self.centre[1] - entity.centre[1]
                     
                     if (entity.width/2 + self.width/2 + 1) - abs(x_diff) < (entity.height/2 + self.height/2 + 1) - abs(y_diff):
+                        self.flow_mult = 1
                         if x_diff < 0:
                             self.location[0] -= (entity.width/2 + self.width/2) - abs(x_diff)
                         else:
@@ -1319,13 +1746,15 @@ class Player:
                         if y_diff < 0:
                             
                             if entity.type == 5:
+                                global just_finished_animation
                                 level_number += 1
                                 max_level = max(level_number, max_level)
                                 
                                 temp = deepcopy(screen.get_surface())
                                 temp = pg.transform.scale(temp, [1280, 720])
                                 stage_transition_animation(temp)
-                                            
+                                
+                                just_finished_animation = True
                                 font = pg.font.SysFont("Comic Sans", 50)
                                 temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
                                 level_text = {}
@@ -1338,7 +1767,7 @@ class Player:
                             self.cayote_timer = 0
                             self.speed[1] = 0
                             
-                            if Bottom_collide == Top_collide == True:
+                            if Bottom_collide == Top_collide == True and self.dash_timer != -1:
                                 self.dead = True
                             self.location[1] -= (entity.height/2 + self.height/2 - 1) - abs(y_diff)
                             
@@ -1506,7 +1935,7 @@ class PowerUp:
             
         elif self.type == 3: # Refusal Zone
             temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
-            pg.draw.rect(temp, (240, 150, 150, 100), ([0, 0], (self.width, self.height)))
+            pg.draw.rect(temp, (240, 150, 150, 50), ([0, 0], (self.width, self.height)))
             surface.blit(temp, self.location)
             
             
@@ -1524,6 +1953,19 @@ class PowerUp:
                 frame = "1"
                 temp = deepcopy(power_images["star_idle"][frame])
                 temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+        
+        elif self.type == 6: #Infographic
+            if level_number == 30:
+                try:
+                    temp = deepcopy(other_images["flow cycle"][frame])
+                    temp = pg.transform.scale(temp, [self.width, self.height])
+                    surface.blit(temp, self.location)
+                except KeyError:
+                    self.frame = 1
+                    frame = "1"
+                    temp = deepcopy(other_images["flow cycle"][frame])
+                    temp = pg.transform.scale(temp, [self.width, self.height])
                 surface.blit(temp, self.location)
         
     def update(self):
@@ -1762,6 +2204,8 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
     global allowed_images
     global selected_object
     
+    global level_13
+    
     selected_object = None
     direction = [0, 0]
     
@@ -1934,7 +2378,6 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                         if pg.key.get_pressed()[key_bindings["left"]]:
                             if direction[0] == 1:
                                 direction[0] -=2
-                                player.flow_mult = 1
                             else:
                                 direction[0] -=1
                             try:
@@ -1951,7 +2394,6 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                         if pg.mouse.get_pressed()[int(key_bindings["left"][-1])]:
                             if direction[0] == 1:
                                 direction[0] -=2
-                                player.flow_mult = 1
                             else:
                                 direction[0] -=1
                             try:
@@ -1970,7 +2412,6 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                         if pg.key.get_pressed()[key_bindings["right"]]:
                             if direction[0] == -1:
                                 direction[0] +=2
-                                player.flow_mult = 1
                             else:
                                 direction[0] +=1
                             direction[0] += 1
@@ -1988,7 +2429,6 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                         if pg.mouse.get_pressed()[int(key_bindings["right"][-1])]:
                             if direction[0] == -1:
                                 direction[0] +=2
-                                player.flow_mult = 1
                             else:
                                 direction[0] +=1
                             try:
@@ -2139,7 +2579,8 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
         elif shrink == True and size == 0 and time_taken >= framerate:
             shrink = False
             grow  = True
-            
+            if level_number == 13:
+                level_13 = True
             for levels in os.walk("levels"):
                 for level in levels[2]:
                     if level.split("-")[0] == str(level_number):
@@ -2187,6 +2628,8 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
         clock.tick(framerate)
         
     if skip == True:
+        if level_number == 13:
+            level_13 = True
         for levels in os.walk("levels"):
             for level in levels[2]:
                 if level.split("-")[0] == str(level_number):
@@ -2194,7 +2637,6 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                     level_name = level.split("-")[1].removesuffix(".lvl")
                     save = open("levels\\"+ level, "rb")
                     load_level(save)
-                    print(level_number)
                     if level_number in list(stars.keys()):
                         if stars[level_number]:
                             for entity in powerups:
@@ -2220,6 +2662,9 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
  
 def main(): 
     
+    global level_13
+    level_13 = False
+    
     global platforms
     global powerups
     global player
@@ -2236,6 +2681,9 @@ def main():
     
     global selected_object
     
+    global just_finished_animation
+    just_finished_animation = False
+    
     music_offset = 0
     
     animation = False         
@@ -2243,6 +2691,8 @@ def main():
     temp = deepcopy(screen.get_surface())
     temp = pg.transform.scale(temp, [1280, 720])
     stage_transition_animation(temp)
+    if level_number == 13:
+        level_13 = True
     
     global cont
     cont = True
@@ -2267,8 +2717,15 @@ def main():
     vignette_strength = 250
     vignette_alpha = 0
     music_dim = 1
-        
-    while True:  
+    
+    
+    while True:
+        if level_13:
+            level_13 = False
+            for platform in platforms:
+                if platform.type == 1:
+                    platform.tags += "-moving_end-"
+        just_finished_animation = False
         direction = [0, 0]
         pre_scaled = pg.Surface([1280, 720])  
         vignette = pg.Surface([1280, 720], pg.SRCALPHA) 
@@ -2394,80 +2851,6 @@ def main():
         if  player != []:       
             if player.dead == False and not player == selected_object:
                 try:
-                    if pg.key.get_pressed()[key_bindings["left"]]:
-                        if direction[0] == 1:
-                            direction[0] -=2
-                            player.flow_mult = 1
-                        else:
-                            direction[0] -=1
-                        try:
-                            if held_keys[key_bindings["left"]] == frame - 1:
-                                player.speed[0] *= 1.0001
-                            else:
-                                player.speed[0] = -3
-                                
-                        except KeyError:
-                            player.speed[0] = -3
-                        
-                        held_keys[key_bindings["left"]] = frame
-                except TypeError:
-                    if pg.mouse.get_pressed()[int(key_bindings["left"][-1])]:
-                        if direction[0] == 1:
-                            direction[0] -=2
-                            player.flow_mult = 1
-                        else:
-                            direction[0] -=1
-                        try:
-                            if held_keys[key_bindings["left"]] == frame - 1:
-                                player.speed[0] *= 1.0001
-                            else:
-                                player.speed[0] = -3
-                                
-                        except KeyError:
-                            player.speed[0] = -3
-                        
-                        held_keys[key_bindings["left"]] = frame
-                                            
-                
-                try:    
-                    if pg.key.get_pressed()[key_bindings["right"]]:
-                        if direction[0] == -1:
-                            direction[0] +=2
-                            player.flow_mult = 1
-                        else:
-                            direction[0] +=1
-                        direction[0] += 1
-                        try:
-                            if held_keys[key_bindings["right"]] == frame - 1:
-                                player.speed[0] *= 1.0001
-                            else:
-                                player.speed[0] = 3
-                                
-                        except KeyError:
-                            player.speed[0] = 3
-                        
-                        held_keys[key_bindings["right"]] = frame
-                except TypeError:
-                    if pg.mouse.get_pressed()[int(key_bindings["right"][-1])]:
-                        if direction[0] == -1:
-                            direction[0] +=2
-                            player.flow_mult = 1
-                        else:
-                            direction[0] +=1
-                        try:
-                            if held_keys[key_bindings["right"]] == frame - 1:
-                                player.speed[0] *= 1.0001
-                            else:
-                                player.speed[0] = 3
-                                
-                        except KeyError:
-                            player.speed[0] = 3
-                        
-                        held_keys[key_bindings["right"]] = frame
-                if direction == [0, 0]:
-                    player.speed[0] = 0
-                
-                try:
                     
                     if pg.key.get_pressed()[key_bindings["jump"]]:
                         direction[1] -= 1
@@ -2504,6 +2887,83 @@ def main():
                     else:
                         player.crouched = False
                 
+                try:
+                    if pg.key.get_pressed()[key_bindings["left"]]:
+                        if direction[0] == 1:
+                            direction[0] -=2
+                            if direction[1] != -1:
+                                player.flow_mult = 1
+                        else:
+                            direction[0] -=1
+                        try:
+                            if held_keys[key_bindings["left"]] == frame - 1:
+                                player.speed[0] *= 1.0001
+                            else:
+                                player.speed[0] = -3
+                                
+                        except KeyError:
+                            player.speed[0] = -3
+                        
+                        held_keys[key_bindings["left"]] = frame
+                except TypeError:
+                    if pg.mouse.get_pressed()[int(key_bindings["left"][-1])]:
+                        if direction[0] == 1:
+                            direction[0] -=2
+                            if direction[1] != -1:
+                                player.flow_mult = 1
+                        else:
+                            direction[0] -=1
+                        try:
+                            if held_keys[key_bindings["left"]] == frame - 1:
+                                player.speed[0] *= 1.0001
+                            else:
+                                player.speed[0] = -3
+                                
+                        except KeyError:
+                            player.speed[0] = -3
+                        
+                        held_keys[key_bindings["left"]] = frame
+                                            
+                
+                try:    
+                    if pg.key.get_pressed()[key_bindings["right"]]:
+                        if direction[0] == -1:
+                            direction[0] +=2
+                            if direction[1] != -1:
+                                player.flow_mult = 1
+                        else:
+                            direction[0] +=1
+                        direction[0] += 1
+                        try:
+                            if held_keys[key_bindings["right"]] == frame - 1:
+                                player.speed[0] *= 1.0001
+                            else:
+                                player.speed[0] = 3
+                                
+                        except KeyError:
+                            player.speed[0] = 3
+                        
+                        held_keys[key_bindings["right"]] = frame
+                except TypeError:
+                    if pg.mouse.get_pressed()[int(key_bindings["right"][-1])]:
+                        if direction[0] == -1:
+                            direction[0] +=2
+                            if direction[1] != -1:
+                                player.flow_mult = 1
+                        else:
+                            direction[0] +=1
+                        try:
+                            if held_keys[key_bindings["right"]] == frame - 1:
+                                player.speed[0] *= 1.0001
+                            else:
+                                player.speed[0] = 3
+                                
+                        except KeyError:
+                            player.speed[0] = 3
+                        
+                        held_keys[key_bindings["right"]] = frame
+                if direction == [0, 0]:
+                    player.speed[0] = 0
                     
                 try:
                     if pg.key.get_pressed()[key_bindings["dash"]]:
@@ -2639,15 +3099,17 @@ def main():
             player.draw(pre_scaled)
             player.update(platforms+powerups, d_time)
             
-            if player != []:
-                if player.flow_mult > 0:
-                    flow_ratio = ((player.flow_mult-1)/5)*100
-                    
-                    music_dim = 0.1*(1/max(flow_ratio, 1)) + 0.9*music_dim
-                    music_channel.set_volume(((master_volume*music_volume)*music_dim)/100)
-                    vignette_alpha =  min(0.9*vignette_alpha + 0.1*max(min(50*flow_ratio, 255), 0), 200)
-                    cutout_size[0] = max(0.1*(1280*(1-flow_ratio/40) ) + (0.9*cutout_size[0]), 0.75*1280)
-                    cutout_size[1] = max(0.1*(720*(1-flow_ratio/40)) + (0.9*cutout_size[1]), 0.75*720)
+            if just_finished_animation:
+                continue
+            
+            if player.flow_mult > 0:
+                flow_ratio = ((player.flow_mult-1)/5)*100
+                
+                music_dim = 0.1*(1/max(flow_ratio, 1)) + 0.9*music_dim
+                music_channel.set_volume(((master_volume*music_volume)*music_dim)/100)
+                vignette_alpha =  min(0.9*vignette_alpha + 0.1*max(min(50*flow_ratio, 255), 0), 200)
+                cutout_size[0] = max(0.1*(1280*(1-flow_ratio/40) ) + (0.9*cutout_size[0]), 0.75*1280)
+                cutout_size[1] = max(0.1*(720*(1-flow_ratio/40)) + (0.9*cutout_size[1]), 0.75*720)
         
         vignette.fill((100, 255, 100, vignette_alpha))
         pg.draw.ellipse(vignette, (0, 0, 0, 0), [[640 - (cutout_size[0]/2), 360 - (cutout_size[1]/2)], cutout_size])

@@ -1,9 +1,5 @@
 
 Game Mechanics
-    -Properly implement moving platform animation.
-        -detect direction.
-         -Just use angle and check if its within certin ranges
-        -Rotate sprite.
 
 GUI
 
@@ -21,26 +17,22 @@ Levels
     Use Moving platforms - Done -11
     Conveyer - Done - 12
     Compactor - 13
-    Use flow mult - Done - 14 / Edit to include double jump + dash + maintaining flow
-    use flow mult again, but with more agency - 15
-    teach flow cycling - For much later - 16
-    ['Flow Cycling', 'Movement Refresh'] - 17
-    ['Moving Platforms', 'Dash Stacking', 'Platform Cycling', 'Death'] - 18
-    ['Crouch Extend', 'Multiple Jumps', 'Flow Mult] - 19
-    ['Single Platform Cycling', 'Multiple Jumps', 'Flow Mult'] - 20
-    ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 21
-    ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 22
-    ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 23
-    ['Dash Stacking', 'Unique Placement', 'Flow Cycling'] - 24
-    ['Unique Placement', 'Moving Platforms', 'Jump + Dash', 'Platforming', 'Death', 'Platform Cycling'] - 25
+    Use flow mult - Done - 14
+    flow mult with more agency - 15
+    ['Flow Cycling', 'Movement Refresh'] - 16
+    ['Moving Platforms', 'Dash Stacking', 'Platform Cycling', 'Death'] - 17
+    ['Crouch Extend', 'Multiple Jumps', 'Flow Mult] - 18
+    ['Single Platform Cycling', 'Multiple Jumps', 'Flow Mult'] - 19
+    ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 20
+    ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21
+    ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 22
+    ['Dash Stacking', 'Unique Placement', 'Flow Cycling'] - 23
+    ['Unique Placement', 'Moving Platforms', 'Jump + Dash', 'Platforming', 'Death', 'Platform Cycling'] - 24
+    teach flow cycling - For much later - 30 - Done 
 
 Art
     Texture Player
     Animate Player
     Texture start Platform
-
-    Make sound effects
-
-    Make Infographics
 
 Misc

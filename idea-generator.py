@@ -14,11 +14,11 @@ mechanics = {"Platform Cycling":3,
              "Flow Mult": 10,
              "Flow Cycling":15}
 
-level_number = 25
+level_number = 15
 
-difficulty = int(level_number * 1.33)
+difficulty = int(level_number * 1.33) - 10
 
-ideas = []
+ideas = ["Flow Mult"]
 
 while difficulty > 0:
     options = []

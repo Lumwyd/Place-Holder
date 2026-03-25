@@ -806,6 +806,9 @@ class Platform:
         self.type = type
         self.start = [self.location[0], self.location[1]]
         self.offset = [0, 0]
+        self.speed = 1
+        
+        self.reverse = False
         
         self.passengers = []
         
@@ -853,6 +856,7 @@ class Player:
         self.start = [self.location[0], self.location[1]]
         
         self.frame = 1
+        self.platform_speed = [0, 0]
         
         self.air_jump = False
         
@@ -967,6 +971,10 @@ class PowerUp:
             screen.get_surface().blit(temp, self.location)
         elif self.type == 5:
             pg.draw.rect(screen.get_surface(), (255, 255, 200), (self.location, (self.width, self.height)))
+        elif self.type == 6:
+            temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
+            pg.draw.rect(temp, (255, 255, 100, 50), ([0, 0], (self.width, self.height)))
+            screen.get_surface().blit(temp, self.location)
       
 platforms = []
 powerups = []
@@ -989,6 +997,7 @@ def main():
     selected_width = 1
     selected_height = 1
     selected_type = 0
+    selected_speed = 1
     
     target_x_offset = 0
     target_y_offset = 0
@@ -1011,10 +1020,11 @@ def main():
         menu_position = mouse_position
     
         select_menu = {"allow": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) - 0.2, menu_position[1]/screen_height], outer, inner, "Allow Placement", radius=0),
-                       "width": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Width: " + str(selected_width), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_width, slider_colour = (147, 107, 15), radius=0),
-                       "height": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.35], outer, inner, "Height: " + str(selected_height), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_height, slider_colour = (147, 107, 15), radius=0),
-                       "type": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.55], outer, inner, "Type: " + str(selected_type), slider = True, slider_max = 5, slider_min = 0, slider_value = selected_type, slider_colour = (147, 107, 15), radius=0),
-                       "target": button(screen, 0.2, 0.1, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.65], outer, inner, "Change Target", radius=0)}
+                       "width": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.1], outer, inner, "Width: " + str(selected_width), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_width, slider_colour = (147, 107, 15), radius=0),
+                       "height": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.25], outer, inner, "Height: " + str(selected_height), slider = True, slider_max = 500, slider_min = 1, slider_value = selected_height, slider_colour = (147, 107, 15), radius=0),
+                       "type": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.4], outer, inner, "Type: " + str(selected_type), slider = True, slider_max = 6, slider_min = 0, slider_value = selected_type, slider_colour = (147, 107, 15), radius=0),
+                       "speed": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.55], outer, inner, "Speed: " + str(selected_speed), slider = True, slider_max = 20, slider_min = 1, slider_value = selected_speed, slider_colour = (147, 107, 15), radius=0),
+                       "target": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.7], outer, inner, "Change Target", radius=0)}
         
         target_menu = {"target_x": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset" + str(target_x_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
                        "target_y": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(target_y_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0)}
@@ -1253,7 +1263,27 @@ def main():
                                         open_menu[item].slider_value = target_y_offset
                                         open_menu[item].text = "Y Offset: " + str(truncate(target_y_offset, 2))
                                         selected_objects[0].offset[1] = target_y_offset*screen_height
+                                
+                                if item == "speed" and len(selected_objects) == 1 and selected_object == None and selected_objects[0].type == 1 and isinstance(selected_objects[0], Platform):
+                                    
+                                    temp = open_menu[item].get_focused(mouse_position)
+                                    
+                                    if temp[0]:
+                                        open_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                                        open_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                                            
+                                    else:
+                                        open_menu[item].outer_colour = outer
+                                        open_menu[item].inner_colour = inner
+                                    
+                                    if temp[1] != None:
+                                        selected_speed = truncate(temp[1], 1)
                                         
+                                        selected_objects[0].speed = selected_speed
+                                            
+                                        open_menu[item].slider_value = selected_speed
+                                        open_menu[item].text = "Speed: " + str(truncate(selected_speed, 1))
+                                  
                     
             if event.type == pg.MOUSEBUTTONUP:
                 if pg.mouse.get_just_released()[0]:
@@ -1375,11 +1405,17 @@ def main():
         for platform in platforms:
             platform.draw()
             platform.frame = 1
+            platform.reverse = False
+            try:
+                platform.speed = platform.speed
+            except:
+                platform.speed = 1
             
         for play_er in player:
             play_er.draw()
             play_er.frame = 1
             play_er.air_jump = False
+            play_er.platform_speed = [0, 0]
         
         temp_dict = {}
         to_remove = []
@@ -1387,6 +1423,14 @@ def main():
             to_remove.append(thing)
             number = allowed_objects[thing]
             thing.frame = 1
+            if isinstance(thing, Platform):
+                thing.reverse = False
+                try:
+                    thing.speed = 2
+                except:
+                    thing.speed = 1
+            if isinstance(thing, Player):
+                thing.platform_speed = [0, 0]
             temp_dict[thing] = number
             
         for thing in to_remove:
