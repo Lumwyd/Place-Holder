@@ -1,9 +1,14 @@
 
 Game Mechanics
+    -Add 9-slicing or whatever
+    -Add stars to menu background
+    -Make saving default to the save the player opened
+
 
 GUI
 
 Levels
+    Fix compatability of old levels
     Teach jump - Done - 1
     Teach Dash + Placement - Done - 2
     Use Platform cycling - Done - 3
@@ -18,11 +23,11 @@ Levels
     Compactor - 12
     Use flow mult - Done - 13
     flow mult with more agency - 14
-    ['Flow Mult', 'Movement Refresh', 'Unique Placement'] - 15
-    ['Flow Mult', 'Platforming', 'Dash Stacking', 'Pogo', 'Jump + Dash']- 16
-    ['Moving Platforms', 'Dash Stacking', 'Platform Cycling', 'Death'] - 17
-    ['Unique Placement', 'Movement Refresh', 'Platform Cycling', 'Pogo', 'Platforming'] - 18
-    ['Pogo', 'Multiple Jumps', 'Flow Mult'] - 19
+    Acrobat - 15
+    Burst- 16
+    Canned Lightning - 17
+    Ghostly - 18
+    ['Multiple Jumps', 'Pogo', 'Unique Placement', 'Moving Platforms'] - 19
     ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 20
     ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21
     ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 22
@@ -36,5 +41,8 @@ Art
         -Jump
         -Idle
         -Dash
+
+    Redo Moving platforms to make strethch/squish more consistent
+    texture powerups
 
 Misc

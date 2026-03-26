@@ -808,6 +808,8 @@ class Platform:
         self.offset = [0, 0]
         self.speed = 1
         
+        self.delay = 0
+        
         self.reverse = False
         
         self.passengers = []
@@ -980,6 +982,9 @@ platforms = []
 powerups = []
 player = []
 allowed_objects = {}  
+
+global opened_save
+opened_save = None
         
 def main():
     global platforms
@@ -1001,6 +1006,7 @@ def main():
     
     target_x_offset = 0
     target_y_offset = 0
+    delay = 0
     
     
     outer = (50, 100, 50)
@@ -1026,8 +1032,9 @@ def main():
                        "speed": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.55], outer, inner, "Speed: " + str(selected_speed), slider = True, slider_max = 20, slider_min = 1, slider_value = selected_speed, slider_colour = (147, 107, 15), radius=0),
                        "target": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.7], outer, inner, "Change Target", radius=0)}
         
-        target_menu = {"target_x": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset" + str(target_x_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
-                       "target_y": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(target_y_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0)}
+        target_menu = {"target_x": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset:" + str(target_x_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
+                       "target_y": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(target_y_offset), slider = True, slider_max = 500, slider_min = -500, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0),
+                       "delay": button(screen, 0.2, 0.15, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.3], outer, inner, "Delay: " + str(delay), slider = True, slider_max = 1, slider_min = 0, slider_value = delay, slider_colour = (147, 107, 15), radius=0)}
         
         cam_menu = {"target_x": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)], outer, inner, "X Offset" + str(target_x_offset), slider = True, slider_max = 1, slider_min = -1, slider_value = target_x_offset, slider_colour = (147, 107, 15), radius=0),
                        "target_y": button(screen, 0.2, 0.2, [(menu_position[0]/screen_width) - 0.2, (menu_position[1]/screen_height)+0.15], outer, inner, "Y Offset: " + str(target_y_offset), slider = True, slider_max = 1, slider_min = -1, slider_value = target_y_offset, slider_colour = (147, 107, 15), radius=0)}
@@ -1127,7 +1134,7 @@ def main():
                             if open_menu[item].get_focused(mouse_position) and (pg.mouse.get_pressed(5)[0] or pg.mouse.get_pressed(5)[2]):
                                 
                                 if item == "width" and len(selected_objects) == 1 and selected_object == None:
-                                    if selected_objects[0].type == 4 and isinstance(selected_objects[0], PowerUp):
+                                    if isinstance(selected_objects[0], PowerUp) and selected_objects[0].type == 4:
                                         open_menu["width"].slider_max = 1500
                                         open_menu["height"].slider_max = 1500
                                     else:
@@ -1150,7 +1157,7 @@ def main():
                                         selected_objects[0].width = selected_width
                                         
                                 if item == "height" and len(selected_objects) == 1 and selected_object == None:
-                                    if selected_objects[0].type == 4 and isinstance(selected_objects[0], PowerUp):
+                                    if isinstance(selected_objects[0], PowerUp) and selected_objects[0].type == 4:
                                         open_menu["width"].slider_max = 1500
                                         open_menu["height"].slider_max = 1500
                                     else:
@@ -1264,7 +1271,7 @@ def main():
                                         open_menu[item].text = "Y Offset: " + str(truncate(target_y_offset, 2))
                                         selected_objects[0].offset[1] = target_y_offset*screen_height
                                 
-                                if item == "speed" and len(selected_objects) == 1 and selected_object == None and selected_objects[0].type == 1 and isinstance(selected_objects[0], Platform):
+                                if item == "speed" and len(selected_objects) == 1 and selected_object == None and isinstance(selected_objects[0], Platform) and selected_objects[0].type == 1 :
                                     
                                     temp = open_menu[item].get_focused(mouse_position)
                                     
@@ -1284,6 +1291,24 @@ def main():
                                         open_menu[item].slider_value = selected_speed
                                         open_menu[item].text = "Speed: " + str(truncate(selected_speed, 1))
                                   
+                                if item == "delay" and len(selected_objects) == 1 and selected_object == None:
+                                    temp = open_menu[item].get_focused(mouse_position)
+                                    
+                                    if temp[0]:
+                                        open_menu[item].outer_colour = min(outer[0]*1.1, 255), min(outer[1]*1.1, 255), min(outer[2]*1.1, 255)
+                                        open_menu[item].inner_colour = min(inner[0]*1.1, 255), min(inner[1]*1.1, 255), min(inner[2]*1.1, 255)
+                                            
+                                    else:
+                                        open_menu[item].outer_colour = outer
+                                        open_menu[item].inner_colour = inner
+                                    
+                                    if temp[1] != None and isinstance(selected_objects[0], Platform):
+                                        delay = truncate(temp[1], 2)
+                                        open_menu[item].slider_value = delay
+                                        open_menu[item].text = "Delay: " + str(truncate(delay, 2))
+                                        selected_objects[0].delay = delay
+                               
+                                
                     
             if event.type == pg.MOUSEBUTTONUP:
                 if pg.mouse.get_just_released()[0]:
@@ -1328,7 +1353,9 @@ def main():
                                     target_menu["target_x"].center[0] = open_menu[item].center[0]+0.2
                                     target_menu["target_x"].center[1] = open_menu["allow"].center[1]
                                     target_menu["target_y"].center[0] = open_menu[item].center[0]+0.2
-                                    target_menu["target_y"].center[1] = open_menu["allow"].center[1]+0.2
+                                    target_menu["target_y"].center[1] = open_menu["allow"].center[1]+0.15
+                                    target_menu["delay"].center[0] = open_menu[item].center[0]+0.2
+                                    target_menu["delay"].center[1] = open_menu["allow"].center[1]+0.3
                                     open_menus.append(target_menu)
                                     
                                 if item == "target" and isinstance(selected_objects[0], PowerUp):   
@@ -1410,6 +1437,10 @@ def main():
                 platform.speed = platform.speed
             except:
                 platform.speed = 1
+            try:
+                platform.delay = platform.delay
+            except:
+                platform.delay = 0
             
         for play_er in player:
             play_er.draw()
@@ -1426,9 +1457,13 @@ def main():
             if isinstance(thing, Platform):
                 thing.reverse = False
                 try:
-                    thing.speed = 2
+                    thing.speed = thing.speed
                 except:
                     thing.speed = 1
+                try:
+                    thing.delay = thing.delay
+                except:
+                    thing.delay = 0
             if isinstance(thing, Player):
                 thing.platform_speed = [0, 0]
             temp_dict[thing] = number

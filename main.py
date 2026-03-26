@@ -300,7 +300,7 @@ def menu(saveable = False):
     global music_channel
     
     global animation
-    global level_13
+    global Compactor
     
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
@@ -616,8 +616,8 @@ def menu(saveable = False):
                             
                             level_number, level_name = level_menu[item].text.split("-")
                             level_number = int(level_number)
-                            if level_number == 13:
-                                level_13 = True
+                            if level_number == 12:
+                                Compactor = True
                             font = pg.font.SysFont("Comic Sans", 50)
                             temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
                             level_text = {}
@@ -1135,11 +1135,30 @@ def menu(saveable = False):
         
         if music_channel.get_busy() == False:
             global current_track
-            current_track = choice(list(music.keys()))
-            segment = choice(list(music[current_track].keys()))
-
+            global current_segment
+            global last_played
+            
+            different_track = False
             music_channel.set_volume(master_volume*music_volume/100)
-            music_channel.play(music[current_track][segment])
+            
+            while True:
+                if int(current_segment) == len(list(music[current_track].keys())):
+                    different_track = True
+                    temp_track = choice(list(music.keys()))
+                    while temp_track == current_track:
+                        temp_track = choice(list(music.keys()))
+                    current_track = temp_track
+                segment = choice(list(music[current_track].keys()))
+                if not music[current_track][segment] in last_played:
+                    break
+            if different_track:
+                 music_channel.play(music[current_track][segment], fade_ms = 500)
+            else:
+                music_channel.play(music[current_track][segment])
+            last_played.insert(0, music[current_track][segment])
+            if len(last_played) > 3:
+                last_played = last_played[0:2]
+            current_segment = segment
         
     if game_start == True:
         main()
@@ -1163,6 +1182,7 @@ class Platform:
         self.id = (randint(1, 12_090_070)/ randint(1, 1350)) * randint(1, 1091)
         
         self.frame = 0
+        self.delay = 0
         
     def draw(self, surface = screen.get_surface()):
         global d_time
@@ -1549,7 +1569,7 @@ class Platform:
                 if isinstance(passenger, Player):
                     passenger.platform_speed = [x_diff*(d_time/10)*self.speed, y_diff*(d_time/10)*self.speed]
                 passenger.location[0] += x_diff*(d_time/10)*self.speed
-                passenger.location[1] += y_diff*(d_time/10)*self.speed
+                passenger.location[1] += min(y_diff*(d_time/10)*self.speed, 0)
                 passenger.centre = [passenger.location[0] + passenger.width/2, passenger.location[1] + passenger.height/2]
                 if isinstance(passenger, Platform) or isinstance(passenger, Player):
                     passenger.start = [passenger.location[0], passenger.location[1]]
@@ -1588,7 +1608,7 @@ class Platform:
                     passenger.platform_speed = [x_diff*(d_time/10)*self.speed, y_diff*(d_time/10)*self.speed]
                 
                 passenger.location[0] += x_diff*(d_time/10)*self.speed
-                passenger.location[1] += y_diff*(d_time/10)*self.speed
+                passenger.location[1] += min(y_diff*(d_time/10)*self.speed, 0)
                 passenger.centre = [passenger.location[0] + passenger.width/2, passenger.location[1] + passenger.height/2]
                 if isinstance(passenger, Platform) or isinstance(passenger, Player):
                     passenger.start = [passenger.location[0], passenger.location[1]]
@@ -1613,7 +1633,11 @@ class Platform:
                 self.tags = self.tags.replace("-moving_start-", "-moving_end-")
                 self.frame = 2
                 self.reverse = True
-                 
+        
+        elif self.type != 1:
+            for passenger in self.passengers:
+                if isinstance(passenger, Player):
+                    passenger.platform_speed = [0, 0]
 class Player:
     def __init__(self, location):
         self.location = location
@@ -1692,11 +1716,16 @@ class Player:
             
             if vector_magnitude(self.dash_speed) == 0:
                 self.dash_timer = -1
-             
+        
+        self.platform_speed[1] = min(self.platform_speed[1], 0)
+        
         flow_speed = [self.speed[0] + self.dash_speed[0], min(self.speed[1], 0) + self.dash_speed[1]]
         if self.on_ground == False and self.speed[1] < 0 and not self.crouched:
             flow_speed[0] += self.platform_speed[0]
             flow_speed[1] += self.platform_speed[1]
+        
+        if self.on_ground == False and (self.speed[1] >= 0 or self.crouched):
+            self.platform_speed = [0, 0]
         
         if vector_magnitude(flow_speed) > 0:
             self.flow_mult += self.flow_mult*0.035*d_time
@@ -1734,9 +1763,8 @@ class Player:
             if self.collide(entity) and not "-no_collide-" in entity.tags and not "-no_collide-" in self.tags:
                 if isinstance(entity, Platform):
                     
-                    if not "moving" in entity.tags:
+                    if not "moving" in entity.tags and entity.delay == 0:
                         entity.tags += "-moving_end-"
-                        
                                     
                     x_diff = self.centre[0] - entity.centre[0]
                     y_diff = self.centre[1] - entity.centre[1]
@@ -1750,6 +1778,12 @@ class Player:
 
                     else:
                         if y_diff < 0:
+                            
+                            if entity.delay > 0:
+                                if entity.location[0] < self.centre[0] < entity.location[0] + entity.width:
+                                    entity.delay -= d_time
+                                    entity.delay = max(entity.delay, 0)
+                        
                             
                             if entity.type == 5:
                                 global just_finished_animation
@@ -1780,6 +1814,8 @@ class Player:
                             
                         else:
                             Top_collide = True
+                            self.speed[1] = max(self.speed[1], 0) 
+                            self.platform_speed[1] = max(self.platform_speed[1], 0) 
                             if Bottom_collide == Top_collide == True:
                                 self.dead = True
                                 
@@ -1799,6 +1835,7 @@ class Player:
                         self.air_jump = True
                         self.cayote_timer = 0
                         powerups.remove(entity)
+                        self.dashes = self.max_dashes 
                     elif entity.type == 1: #Dash Crystal
                         if self.jump_enabled:
                             self.jump_allowed = True
@@ -1881,8 +1918,7 @@ class Player:
             self.start = [self.location[0], self.location[1]]
                     
         if self.on_ground or self.air_jump:
-            if self.dash_timer == -1:
-                self.dashes = self.max_dashes
+            self.dashes = self.max_dashes
             self.jump_allowed = True
         else:
             self.jump_allowed = False
@@ -2003,14 +2039,20 @@ player = []
 allowed_objects = {}
 
 global current_track
+global current_segment
+global last_played
+
+last_played = []
 current_track = "MomentsBetween"
 segment = str(1)
+current_segment = segment
 
 global music_channel
 music_channel = pg.mixer.Channel(1)
 
 music_channel.set_volume(master_volume*music_volume/100)
 music_channel.play(music[current_track][segment])
+last_played.insert(0, music[current_track][segment])
 
 global animation
 animation = False
@@ -2210,7 +2252,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
     global allowed_images
     global selected_object
     
-    global level_13
+    global Compactor
     
     selected_object = None
     direction = [0, 0]
@@ -2378,146 +2420,6 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
             size = max(size, 0)
             
         if grow == True:
-            if  player != []:       
-                if player.dead == False and not player == selected_object:
-                    try:
-                        if pg.key.get_pressed()[key_bindings["left"]]:
-                            if direction[0] == 1:
-                                direction[0] -=2
-                            else:
-                                direction[0] -=1
-                            try:
-                                if held_keys[key_bindings["left"]] == frame - 1:
-                                    player.speed[0] *= 1.0001
-                                else:
-                                    player.speed[0] = -3
-                                    
-                            except KeyError:
-                                player.speed[0] = -3
-                            
-                            held_keys[key_bindings["left"]] = frame
-                    except TypeError:
-                        if pg.mouse.get_pressed()[int(key_bindings["left"][-1])]:
-                            if direction[0] == 1:
-                                direction[0] -=2
-                            else:
-                                direction[0] -=1
-                            try:
-                                if held_keys[key_bindings["left"]] == frame - 1:
-                                    player.speed[0] *= 1.0001
-                                else:
-                                    player.speed[0] = -3
-                                    
-                            except KeyError:
-                                player.speed[0] = -3
-                            
-                            held_keys[key_bindings["left"]] = frame
-                                                
-                    
-                    try:    
-                        if pg.key.get_pressed()[key_bindings["right"]]:
-                            if direction[0] == -1:
-                                direction[0] +=2
-                            else:
-                                direction[0] +=1
-                            direction[0] += 1
-                            try:
-                                if held_keys[key_bindings["right"]] == frame - 1:
-                                    player.speed[0] *= 1.0001
-                                else:
-                                    player.speed[0] = 3
-                                    
-                            except KeyError:
-                                player.speed[0] = 3
-                            
-                            held_keys[key_bindings["right"]] = frame
-                    except TypeError:
-                        if pg.mouse.get_pressed()[int(key_bindings["right"][-1])]:
-                            if direction[0] == -1:
-                                direction[0] +=2
-                            else:
-                                direction[0] +=1
-                            try:
-                                if held_keys[key_bindings["right"]] == frame - 1:
-                                    player.speed[0] *= 1.0001
-                                else:
-                                    player.speed[0] = 3
-                                    
-                            except KeyError:
-                                player.speed[0] = 3
-                            
-                            held_keys[key_bindings["right"]] = frame
-                    if direction == [0, 0]:
-                        player.speed[0] = 0
-                    
-                    try:
-                        
-                        if pg.key.get_pressed()[key_bindings["jump"]]:
-                            direction[1] -= 1
-                        if pg.key.get_just_pressed()[key_bindings["jump"]]:
-                            if player.jump_enabled and player.jump_allowed:
-                                player.speed[1] = min(player.speed[1], 0)
-                                player.speed[1] -= 4
-                                player.jump_allowed = False
-                                player.on_ground = False
-                                player.cayote_timer = 0
-                    except TypeError:
-                        if pg.mouse.get_pressed()[int(key_bindings["jump"][-1])]:
-                            direction[1] -= 1
-                        if pg.mouse.get_just_pressed()[int(key_bindings["jump"][-1])]:
-                            if player.jump_enabled and player.jump_allowed:
-                                player.speed[1] = min(player.speed[1], 0)
-                                player.speed[1] -= 4
-                                player.jump_allowed = False
-                                player.on_ground = False
-                                player.cayote_timer = 0
-                    try:
-                        
-                        if pg.key.get_pressed()[key_bindings["crouch"]]:
-                            direction[1] += 1
-                            player.crouched = True
-                        else:
-                            player.crouched = False
-                    
-                    except TypeError:
-                        if pg.mouse.get_pressed()[int(key_bindings["crouch"][-1])]:
-                            direction[1] += 1
-                            player.crouched = True
-                        else:
-                            player.crouched = False
-                    
-                        
-                    try:
-                        if pg.key.get_pressed()[key_bindings["dash"]]:
-                            if player.dashes > 0 and player.dash_timer == -1 and vector_magnitude(direction):
-                                player.dashes -= 1
-                                player.dash_timer = 0
-                                player.speed[1] = 0
-                                
-                                direction = normalise(direction)
-                                
-                                player.dash_speed[0] += 10*direction[0]
-                                player.dash_speed[1] += 10*direction[1]
-                    except TypeError:
-                        if pg.mouse.get_pressed()[int(key_bindings["dash"][-1])]:
-                            if player.dashes > 0 and vector_magnitude(direction) > 0 and player.dash_timer == -1:
-                                player.dashes -= 1
-                                player.dash_timer = 0
-                                player.speed[1] = 0
-                                
-                                direction = normalise(direction)
-                                
-                                player.dash_speed[0] += 10*direction[0]
-                                player.dash_speed[1] += 10*direction[1]
-                
-                if player.dead == True:
-                    level_text = {}
-                    font = pg.font.SysFont("Comic Sans", 50)
-                    
-                    temp = font.render("Press " + key_names["reset"].title() + " to Reset", True, (180, 200, 180))
-                        
-                    level_text[temp] = [40000, 99999]
-            
             
             for sky_star in level_stars:
                 temp_star = deepcopy(power_images["star_idle"]["1"])
@@ -2585,8 +2487,8 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
         elif shrink == True and size == 0 and time_taken >= framerate:
             shrink = False
             grow  = True
-            if level_number == 13:
-                level_13 = True
+            if level_number == 12:
+                Compactor = True
             for levels in os.walk("levels"):
                 for level in levels[2]:
                     if level.split("-")[0] == str(level_number):
@@ -2634,8 +2536,8 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
         clock.tick(framerate)
         
     if skip == True:
-        if level_number == 13:
-            level_13 = True
+        if level_number == 12:
+            Compactor = True
         for levels in os.walk("levels"):
             for level in levels[2]:
                 if level.split("-")[0] == str(level_number):
@@ -2668,8 +2570,8 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
  
 def main(): 
     
-    global level_13
-    level_13 = False
+    global Compactor
+    Compactor = False
     
     global platforms
     global powerups
@@ -2697,8 +2599,8 @@ def main():
     temp = deepcopy(screen.get_surface())
     temp = pg.transform.scale(temp, [1280, 720])
     stage_transition_animation(temp)
-    if level_number == 13:
-        level_13 = True
+    if level_number == 12:
+        Compactor = True
     
     global cont
     cont = True
@@ -2726,8 +2628,8 @@ def main():
     
     
     while True:
-        if level_13:
-            level_13 = False
+        if Compactor:
+            Compactor = False
             for platform in platforms:
                 if platform.type == 1:
                     platform.tags += "-moving_end-"
@@ -2968,7 +2870,7 @@ def main():
                             player.speed[0] = 3
                         
                         held_keys[key_bindings["right"]] = frame
-                if direction == [0, 0]:
+                if direction[0] == 0:
                     player.speed[0] = 0
                     
                 try:
@@ -3202,10 +3104,30 @@ def main():
         
         if music_channel.get_busy() == False:
             global current_track
-            current_track = choice(list(music.keys()))
-            segment = str(randint(1, 5))
+            global current_segment
+            global last_played
+            
+            different_track = False
             music_channel.set_volume(master_volume*music_volume/100)
-            music_channel.play(music[current_track][segment])
+            
+            while True:
+                if int(current_segment) == len(list(music[current_track].keys())):
+                    different_track = True
+                    temp_track = choice(list(music.keys()))
+                    while temp_track == current_track:
+                        temp_track = choice(list(music.keys()))
+                    current_track = temp_track
+                segment = choice(list(music[current_track].keys()))
+                if not music[current_track][segment] in last_played:
+                    break
+            if different_track:
+                 music_channel.play(music[current_track][segment], fade_ms = 500)
+            else:
+                music_channel.play(music[current_track][segment])
+            last_played.insert(0, music[current_track][segment])
+            if len(last_played) > 3:
+                last_played = last_played[0:2]
+            current_segment = segment
         
 
 menu(True)
