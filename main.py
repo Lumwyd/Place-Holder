@@ -1167,7 +1167,9 @@ class Platform:
     def draw(self, surface = screen.get_surface()):
         global d_time
         if self.type == 0: # Default
-            pg.draw.rect(surface, (240, 240, 240), (self.location, (self.width, self.height)))
+            image = platform_images["white"]
+            image = pg.transform.scale(image, [self.width, self.height])
+            surface.blit(image, (self.location))
         elif self.type == 1: # Moving Platform
             if self.frame >= 2:
                 self.frame += d_time*60
@@ -1516,9 +1518,13 @@ class Platform:
         elif self.type == 2: # Murder
             pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)))
         elif self.type == 3: # Gray
-            pg.draw.rect(surface, (50, 50, 50), (self.location, (self.width, self.height)))
+            image = platform_images["gray"]
+            image = pg.transform.scale(image, [self.width, self.height])
+            surface.blit(image, (self.location))
         elif self.type == 4: # Start Platform
-            pg.draw.rect(surface, (50, 240, 50), (self.location, (self.width, self.height)))
+            image = platform_images["start"]
+            image = pg.transform.scale(image, [self.width, self.height])
+            surface.blit(image, (self.location))
         elif self.type == 5: # End Platform
             image = platform_images["end"]
             image = pg.transform.scale(image, [self.width, self.height])
@@ -1898,7 +1904,7 @@ class Player:
             self.width = 55
             self.speed[0] = 0
  
-class PowerUp:
+class PowerUp: 
     def __init__(self, location, type):
         self.location = location
         self.type = type

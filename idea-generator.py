@@ -1,24 +1,22 @@
 from random import *
 
 mechanics = {"Platform Cycling":3,
-             "Single Platform Cycling":6,
-             "Unique Placement":8,
+             "Pogo":4,
+             "Unique Placement":5,
              "Multiple Jumps":6,
              "Dash Stacking": 7,
-             "Jump + Dash":5,
+             "Jump + Dash":4,
              "Movement Refresh":8,
-             "Crouch Extend":18,
              "Moving Platforms":5,
              "Death":7,
              "Platforming": 3,
-             "Flow Mult": 10,
-             "Flow Cycling":15}
+             "Flow Mult": 10}
 
-level_number = 15
+level_number = 8
 
-difficulty = int(level_number * 1.33) - 10
+difficulty = int(level_number * 1.33) 
 
-ideas = ["Flow Mult"]
+ideas = ["Jump + Dash"]
 
 while difficulty > 0:
     options = []

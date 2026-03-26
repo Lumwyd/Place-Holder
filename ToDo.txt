@@ -7,32 +7,34 @@ Levels
     Teach jump - Done - 1
     Teach Dash + Placement - Done - 2
     Use Platform cycling - Done - 3
-    Single platform cycling - Done - 4
+    Pogo - Done - 4 + Platforming
     Make player place self at end - Done - 5
     Double Jump - Done - 6
     Dash stacking - Done - 7
-    Use jump + dash - Done - 8
+    Use jump + dash - Done - 8 + dash stacking + platforming
     use jump to refresh dash - 9
-    Use crouch extend - Done - 10
-    Use Moving platforms - Done -11
-    Conveyer - Done - 12
-    Compactor - 13
-    Use flow mult - Done - 14
-    flow mult with more agency - 15
-    ['Flow Cycling', 'Movement Refresh'] - 16
+    Use Moving platforms - Done -10
+    Conveyer - Done - 11
+    Compactor - 12
+    Use flow mult - Done - 13
+    flow mult with more agency - 14
+    ['Flow Mult', 'Movement Refresh', 'Unique Placement'] - 15
+    ['Flow Mult', 'Platforming', 'Dash Stacking', 'Pogo', 'Jump + Dash']- 16
     ['Moving Platforms', 'Dash Stacking', 'Platform Cycling', 'Death'] - 17
-    ['Crouch Extend', 'Multiple Jumps', 'Flow Mult] - 18
-    ['Single Platform Cycling', 'Multiple Jumps', 'Flow Mult'] - 19
+    ['Unique Placement', 'Movement Refresh', 'Platform Cycling', 'Pogo', 'Platforming'] - 18
+    ['Pogo', 'Multiple Jumps', 'Flow Mult'] - 19
     ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 20
     ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21
     ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 22
-    ['Dash Stacking', 'Unique Placement', 'Flow Cycling'] - 23
+    ['Flow Mult', 'Platform Cycling', 'Platforming', 'Unique Placement', 'Dash Stacking', 'Pogo'] - 23
     ['Unique Placement', 'Moving Platforms', 'Jump + Dash', 'Platforming', 'Death', 'Platform Cycling'] - 24
-    teach flow cycling - For much later - 30 - Done 
+    ['Flow Mult', 'Movement Refresh', 'Multiple Jumps', 'Death', 'Pogo', 'Platform Cycling', 'Platforming'] - 25
 
 Art
     Texture Player
-    Animate Player
-    Texture start Platform
+        -Crouch
+        -Jump
+        -Idle
+        -Dash
 
 Misc
