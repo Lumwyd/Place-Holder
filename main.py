@@ -302,6 +302,8 @@ def menu(saveable = False):
     global animation
     global Compactor
     
+    global opened_save
+    
     title = "PlaceHolder"
     font = pg.font.SysFont("Comic Sans", 50)
     title = font.render(title, True, (180, 200, 180))
@@ -589,6 +591,7 @@ def menu(saveable = False):
                             options.close()                                                                                               
                         
                         elif item in load_menu and not item == "back_tm":
+                            opened_save = item.removesuffix(".sav")
                             save = open("saves\\"+item, "rb")
                             load(save)
                             main()
@@ -626,7 +629,10 @@ def menu(saveable = False):
                               
                         elif item == "save":
                             done = False
-                            save_name = time.ctime().replace(":", "_").replace(" ", "_")
+                            if opened_save == None:
+                                save_name = time.ctime().replace(":", "_").replace(" ", "_")
+                            else:
+                                save_name = opened_save
                             
                             font = pg.font.SysFont("calibri", int(0.1*screen_height))
                             
@@ -1185,12 +1191,69 @@ class Platform:
         self.delay = 0
         
     def draw(self, surface = screen.get_surface()):
+        self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         global d_time
         if self.type == 0: # Default
-            image = platform_images["white"]
-            image = pg.transform.scale(image, [self.width, self.height])
-            surface.blit(image, (self.location))
+            # 5 is the non-scaled size of all these textures
+            center = deepcopy(platform_images["white"]["center"])
+            corner = deepcopy(platform_images["white"]["corner"])
+            edge = deepcopy(platform_images["white"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [self.width-10, 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
         elif self.type == 1: # Moving Platform
+            # 5 is the non-scaled size of all these textures
+            # Right now I'm drawing the moving platform, the center animation is done after
+            center = deepcopy(platform_images["moving"]["center"])
+            corner = deepcopy(platform_images["moving"]["corner"])
+            edge = deepcopy(platform_images["moving"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [self.width-10, 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
             if self.frame >= 2:
                 self.frame += d_time*60
             frame = str(int(self.frame))
@@ -1242,8 +1305,9 @@ class Platform:
                         frame = str(len(platform_images[folder]))
                   
                 temp = deepcopy(platform_images[folder][frame])
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
             
             elif 67.5 < direction <= 112.5: # right
                 if "-moving_start-" in self.tags:
@@ -1282,8 +1346,9 @@ class Platform:
                   
                 temp = deepcopy(platform_images[folder][frame])
                 temp = pg.transform.rotate(temp, -90)
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
             
             elif 112.5 < direction <= 157.5: # down-right
                 if "-moving_start-" in self.tags:
@@ -1323,8 +1388,9 @@ class Platform:
                     
                 temp = deepcopy(platform_images[folder][frame])
                 temp = pg.transform.rotate(temp, -90)
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
                 
             elif 157.5 < direction <= 202.5: # down
                 if "-moving_start-" in self.tags:
@@ -1364,8 +1430,9 @@ class Platform:
                     
                 temp = deepcopy(platform_images[folder][frame])
                 temp = pg.transform.rotate(temp, 180)
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
                 
             elif 202.5 < direction <= 247.5: # down-left
                 if "-moving_start-" in self.tags:
@@ -1406,8 +1473,9 @@ class Platform:
                     
                 temp = deepcopy(platform_images[folder][frame])
                 temp = pg.transform.rotate(temp, 180)
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
                 
             elif 247.5 < direction <= 292.5: # left
                 if "-moving_start-" in self.tags:
@@ -1447,8 +1515,9 @@ class Platform:
                   
                 temp = deepcopy(platform_images[folder][frame])
                 temp = pg.transform.rotate(temp, 90)
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
                 
             elif 292.5 < direction <= 337.5: # up-left
                 if "-moving_start-" in self.tags:
@@ -1488,8 +1557,9 @@ class Platform:
                     
                 temp = deepcopy(platform_images[folder][frame])
                 temp = pg.transform.rotate(temp, 90)
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
             
             elif 337.5 < direction < 360 or 0 <= direction <= 22.5: # up
                 if "-moving_start-" in self.tags:
@@ -1527,35 +1597,95 @@ class Platform:
                         frame = str(len(platform_images[folder]))
                       
                 temp = deepcopy(platform_images[folder][frame])
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
                 
             else:
                 temp = platform_images["moving_cto"]["1"]
-                temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
                 
         elif self.type == 2: # Murder
             pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)))
+            
         elif self.type == 3: # Gray
-            image = platform_images["gray"]
-            image = pg.transform.scale(image, [self.width, self.height])
-            surface.blit(image, (self.location))
+            # 5 is the non-scaled size of all these textures
+            center = deepcopy(platform_images["gray"]["center"])
+            corner = deepcopy(platform_images["gray"]["corner"])
+            edge = deepcopy(platform_images["gray"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [self.width-10, 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
         elif self.type == 4: # Start Platform
-            image = platform_images["start"]
-            image = pg.transform.scale(image, [self.width, self.height])
-            surface.blit(image, (self.location))
+            # 5 is the non-scaled size of all these textures
+            center = deepcopy(platform_images["start"]["center"])
+            corner = deepcopy(platform_images["start"]["corner"])
+            edge = deepcopy(platform_images["start"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [self.width-10, 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
         elif self.type == 5: # End Platform
             image = platform_images["end"]
             image = pg.transform.scale(image, [self.width, self.height])
             surface.blit(image, (self.location))
         
     def update(self):
+        try:
+            self.max_delay = self.max_delay
+        except AttributeError:
+            self.max_delay = self.delay
+            
         global d_time
         if self.type == 1:
             pass
         
-        if self.type == 1 and "-moving_end-" in self.tags and self.frame == 1:
+        if self.type == 1 and "-moving_end-" in self.tags and self.frame == 1 and self.delay == 0:
             
             destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
             
@@ -1593,8 +1723,9 @@ class Platform:
             if self.location == destination:
                 self.tags = self.tags.replace("-moving_end-", "-moving_start-")
                 self.frame = 2
+                self.delay = self.max_delay
             
-        elif self.type == 1 and "-moving_start-" in self.tags and self.frame == 1:
+        elif self.type == 1 and "-moving_start-" in self.tags and self.frame == 1 and self.delay == 0:
             destination = [self.start[0] + self.offset[0], self.start[1] + self.offset[1]]
             
             x_diff = self.start[0] - destination[0]
@@ -1633,11 +1764,13 @@ class Platform:
                 self.tags = self.tags.replace("-moving_start-", "-moving_end-")
                 self.frame = 2
                 self.reverse = True
+                self.delay = self.max_delay
         
         elif self.type != 1:
             for passenger in self.passengers:
                 if isinstance(passenger, Player):
                     passenger.platform_speed = [0, 0]
+
 class Player:
     def __init__(self, location):
         self.location = location
@@ -1700,15 +1833,17 @@ class Player:
             self.crouched = True
             self.dash_timer += d_time
         else:
-            if not "-no_collide-" in self.tags:
+            if self.speed[1] <= 0 and self.platform_speed != [0, 0]:
                 self.speed[1] += 0.1*d_time*60
+            else:
+                self.speed[1] += 0.15*d_time*60
             
         if self.dash_timer >= 0.17:
             self.crouched = True
             
             if not "-no_collide-" in self.tags:
                 self.speed[1] += 0.1*d_time*60
-            
+                    
             self.dash_speed[0] *= 0.8
             self.dash_speed[1] *= 0.8
             self.dash_speed[0] = truncate(self.dash_speed[0], 1)
@@ -1720,11 +1855,11 @@ class Player:
         self.platform_speed[1] = min(self.platform_speed[1], 0)
         
         flow_speed = [self.speed[0] + self.dash_speed[0], min(self.speed[1], 0) + self.dash_speed[1]]
-        if self.on_ground == False and self.speed[1] < 0 and not self.crouched:
+        if self.on_ground == False and not self.crouched:
             flow_speed[0] += self.platform_speed[0]
             flow_speed[1] += self.platform_speed[1]
         
-        if self.on_ground == False and (self.speed[1] >= 0 or self.crouched):
+        if (flow_speed[1] > 0 and abs(self.platform_speed[0]) == 0) :
             self.platform_speed = [0, 0]
         
         if vector_magnitude(flow_speed) > 0:
@@ -1739,11 +1874,15 @@ class Player:
         self.location[1] += self.speed[1]*self.flow_mult*d_time*60
         self.location[0] += self.dash_speed[0]*self.flow_mult*d_time*60
         self.location[1] += self.dash_speed[1]*self.flow_mult*d_time*60
-        if self.on_ground == False and self.speed[1] < 0 and not self.crouched:
+        if self.on_ground == False  and not self.crouched:
             self.location[0] += self.platform_speed[0]*d_time*60
             self.location[1] += self.platform_speed[1]*d_time*60
             self.platform_speed[0] -= 2.3*self.platform_speed[0]*d_time
             self.platform_speed[1] -= 2.3*self.platform_speed[1]*d_time
+            
+            self.platform_speed[0] = truncate(self.platform_speed[0], 2)
+            self.platform_speed[1] = truncate(self.platform_speed[1], 2)
+            
         self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
         
         if self.cayote_timer >= 0.204:
@@ -1916,7 +2055,10 @@ class Player:
           
         else:
             self.start = [self.location[0], self.location[1]]
-                    
+        
+        if self.on_ground:
+            self.air_jump = False
+            
         if self.on_ground or self.air_jump:
             self.dashes = self.max_dashes
             self.jump_allowed = True
@@ -2017,6 +2159,9 @@ class PowerUp:
         if player != []:
             if "-triggered-" in self.tags and self.type == 4 and player.collide(self) == False:
                 self.tags = self.tags.replace("-triggered-", "")
+       
+global opened_save
+opened_save = None
        
 global level_number
 global stars
@@ -2878,7 +3023,9 @@ def main():
                         if player.dashes > 0 and player.dash_timer == -1 and vector_magnitude(direction):
                             player.dashes -= 1
                             player.dash_timer = 0
-                            player.speed[1] = 0
+                            player.on_ground = False
+                            player.air_jump = False
+                            player.speed[1] = min(player.speed[1], 0)
                             
                             direction = normalise(direction)
                             
@@ -2889,12 +3036,15 @@ def main():
                         if player.dashes > 0 and vector_magnitude(direction) > 0 and player.dash_timer == -1:
                             player.dashes -= 1
                             player.dash_timer = 0
-                            player.speed[1] = 0
+                            player.on_ground = False
+                            player.air_jump = False
+                            player.speed[1] = min(player.speed[1], 0)
                             
                             direction = normalise(direction)
                             
                             player.dash_speed[0] += 10*direction[0]
                             player.dash_speed[1] += 10*direction[1]
+                            
             
             if player.dead == True:
                 level_text = {}

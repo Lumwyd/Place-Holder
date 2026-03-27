@@ -1,14 +1,11 @@
 
 Game Mechanics
-    -Add 9-slicing or whatever
     -Add stars to menu background
-    -Make saving default to the save the player opened
 
 
 GUI
 
 Levels
-    Fix compatability of old levels
     Teach jump - Done - 1
     Teach Dash + Placement - Done - 2
     Use Platform cycling - Done - 3
@@ -27,7 +24,7 @@ Levels
     Burst- 16
     Canned Lightning - 17
     Ghostly - 18
-    ['Multiple Jumps', 'Pogo', 'Unique Placement', 'Moving Platforms'] - 19
+    Juggler - 19
     ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 20
     ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21
     ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 22
@@ -42,7 +39,6 @@ Art
         -Idle
         -Dash
 
-    Redo Moving platforms to make strethch/squish more consistent
     texture powerups
 
 Misc

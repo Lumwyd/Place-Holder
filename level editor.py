@@ -207,6 +207,7 @@ def menu(saveable = False):
     global powerups
     global player
     global allowed_objects
+    global opened_save
     
     title = "PlaceHolder Level Editor"
     font = pg.font.SysFont("Comic Sans", 50)
@@ -437,13 +438,17 @@ def menu(saveable = False):
                             options.close()                                                                                               
                         
                         elif item in load_menu and not item == "back_tm":
+                            opened_save = item.removesuffix(".lvl")
                             save = open("levels\\"+item, "rb")
                             load(save)
                             main()
                               
                         elif item == "save":
                             done = False
-                            save_name = time.ctime().replace(":", "_").replace(" ", "_")
+                            if opened_save == None:
+                                save_name = time.ctime().replace(":", "_").replace(" ", "_")
+                            else:
+                                save_name = opened_save
                             
                             font = pg.font.SysFont("calibri", int(0.1*screen_height))
                             
