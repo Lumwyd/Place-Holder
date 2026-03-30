@@ -24,7 +24,7 @@ Levels
     Canned Lightning - 17
     Ghostly - 18
     Juggler - 19
-    ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 20 - Zeus' Might
+    Zeus' Might - 20
     ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21 - Catlike
     ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 22
     ['Flow Mult', 'Platform Cycling', 'Platforming', 'Unique Placement', 'Dash Stacking', 'Pogo'] - 23

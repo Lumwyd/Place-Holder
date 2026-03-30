@@ -71,8 +71,29 @@ other_images = {}
 for image in os.walk("assets\\images"):
     
     if image[0] == "assets\\images\\player":
-        for frame in image[2]:
-            player_images[frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+frame)
+        for player_image in image[2]:
+            if len(player_image.split("_")) > 1:
+                root = player_image.split("_")[0]
+                frame = player_image.removesuffix(".png").split("_")[1]
+                
+                try:
+                    player_images[root][frame] = pg.image.load("assets\\images\\player\\"+player_image)
+                except KeyError:
+                    player_images[root] = {}
+                    player_images[root][frame] = pg.image.load("assets\\images\\player\\"+player_image)
+            else:
+                player_images[player_image.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+player_image)
+         
+        
+        for root in image[1]:
+            for frames in os.walk("assets\\images\\player\\"+root):
+                frames = frames[2]
+                for frame in frames:
+                    try:
+                        player_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+root+"\\"+frame)
+                    except KeyError:
+                        player_images[root] = {}
+                        player_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\player\\"+root+"\\"+frame)
     
     elif image[0] == "assets\\images\\platforms":
         for platform in image[2]:
@@ -87,8 +108,19 @@ for image in os.walk("assets\\images"):
                     platform_images[root][frame] = pg.image.load("assets\\images\\platforms\\"+platform)
             else:
                 platform_images[platform.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+platform)
+         
+        
+        for root in image[1]:
+            for frames in os.walk("assets\\images\\platforms\\"+root):
+                frames = frames[2]
+                for frame in frames:
+                    try:
+                        platform_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+root+"\\"+frame)
+                    except KeyError:
+                        platform_images[root] = {}
+                        platform_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\platforms\\"+root+"\\"+frame)
     
-    elif image[0] == "assets\\images\\power_ups":
+    elif image[0] == "assets\\images\\power_ups":        
         for power in image[2]:
             if len(power.split("_")) > 1:
                 root = power.split("_")[0]
@@ -102,13 +134,50 @@ for image in os.walk("assets\\images"):
             else:
                 power_images[power.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+power)
          
+        
+        for root in image[1]:
+            for frames in os.walk("assets\\images\\power_ups\\"+root):
+                frames = frames[2]
+                for frame in frames:
+                    try:
+                        power_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+root+"\\"+frame)
+                    except KeyError:
+                        power_images[root] = {}
+                        power_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\power_ups\\"+root+"\\"+frame)
+    
     else:
-        if image[0].count("\\") >= 2:
+        if image[0].count("\\") > 2:
             pass
         else:
-            for o_i in image[2]:
-                other_images[o_i.removesuffix(".png")] = pg.image.load("assets\\images\\"+o_i)
+            for other_image in image[2]:
+                if len(other_image.split("_")) > 1:
+                    root = other_image.split("_")[0]
+                    frame = other_image.removesuffix(".png").split("_")[1]
+                    
+                    try:
+                        other_images[root][frame] = pg.image.load("assets\\images\\"+other_image)
+                    except KeyError:
+                        other_images[root] = {}
+                        other_images[root][frame] = pg.image.load("assets\\images\\"+other_image)
+                else:
+                    try:
+                        other_images[other_image.removesuffix(".png")] = pg.image.load("assets\\images\\"+other_image)
+                    except FileNotFoundError:
+                        pass
             
+            
+            for root in image[1]:
+                if root in ["platforms", "power_ups", "player"]:
+                    continue
+                for frames in os.walk("assets\\images\\"+root):
+                    frames = frames[2]
+                    for frame in frames:
+                        try:
+                            other_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\"+root+"\\"+frame)
+                        except KeyError:
+                            other_images[root] = {}
+                            other_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\"+root+"\\"+frame)
+           
 other_sounds = {}
 player_sounds = {}
 platform_sounds = {}
@@ -824,20 +893,491 @@ class Platform:
         
         self.frame = 1
         
-    def draw(self):
-        if self.type == 0:
-            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
-        elif self.type == 1:
-            pg.draw.rect(screen.get_surface(), (240, 50, 240), (self.location, (self.width, self.height)))
-        elif self.type == 2:
-            pg.draw.rect(screen.get_surface(), (150, 0, 0), (self.location, (self.width, self.height)))
-        elif self.type == 3:
-            pg.draw.rect(screen.get_surface(), (50, 50, 50), (self.location, (self.width, self.height)))
-        elif self.type == 4:
-            pg.draw.rect(screen.get_surface(), (50, 240, 50), (self.location, (self.width, self.height)))
-        elif self.type == 5:
-            pg.draw.rect(screen.get_surface(), (255, 150, 150), (self.location, (self.width, self.height)))
-        
+    def draw(self, surface = screen.get_surface()):
+        self.centre = [self.location[0] + self.width/2, self.location[1] + self.height/2]
+        global d_time
+        if self.type == 0: # Default
+            # 5 is the non-scaled size of all these textures
+            center = deepcopy(platform_images["white"]["center"])
+            corner = deepcopy(platform_images["white"]["corner"])
+            edge = deepcopy(platform_images["white"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [max(max(self.width-10, 1), 1), max(max(self.height-10, 1), 1)])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [max(max(self.width-10, 1), 1), 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [max(max(self.height-10, 1), 1), 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
+        elif self.type == 1: # Moving Platform
+            # 5 is the non-scaled size of all these textures
+            # Right now I'm drawing the moving platform, the center animation is done after
+            center = deepcopy(platform_images["moving"]["center"])
+            corner = deepcopy(platform_images["moving"]["corner"])
+            edge = deepcopy(platform_images["moving"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [max(self.width-10, 1), max(self.height-10, 1)])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [max(self.width-10, 1), 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [max(self.height-10, 1), 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
+            if self.frame >= 2:
+                self.frame += d_time*60
+            frame = str(int(self.frame))
+                
+            direction = (degrees(angle_from_vector(self.offset)) + 90)%360
+            if "-moving_start-" in self.tags and (self.frame == 1 or self.reverse):
+                direction += 180
+                direction %= 360
+                
+            elif "-moving_end-" in self.tags and self.reverse and int(frame) >= 2:
+                direction += 180
+                direction %= 360 
+                
+                
+                
+            if 22.5 < direction <= 67.5: # up-right
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                else:
+                    folder = "moving_otc"
+                    
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                temp = deepcopy(platform_images[folder][frame])
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+            
+            elif 67.5 < direction <= 112.5: # right
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                else:
+                    folder = "moving_otc"
+                    
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, -90)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+            
+            elif 112.5 < direction <= 157.5: # down-right
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, -90)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+                
+            elif 157.5 < direction <= 202.5: # down
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                else:
+                    folder = "moving_otc"
+                    
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 180)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+                
+            elif 202.5 < direction <= 247.5: # down-left
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                        
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 180)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+                
+            elif 247.5 < direction <= 292.5: # left
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                        
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 90)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+                
+            elif 292.5 < direction <= 337.5: # up-left
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_ctd"
+                    else:
+                        folder = "moving_dtc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_dtc"
+                    else:
+                        folder = "moving_ctd"
+                else:
+                    folder = "moving_otc"
+                
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                  
+                    
+                temp = deepcopy(platform_images[folder][frame])
+                temp = pg.transform.rotate(temp, 90)
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+            
+            elif 337.5 < direction < 360 or 0 <= direction <= 22.5: # up
+                if "-moving_start-" in self.tags:
+                    if self.reverse:
+                        folder = "moving_cto"
+                    else:
+                        folder = "moving_otc"
+                elif "-moving_end-" in self.tags and int(frame) >= 2:
+                    if self.reverse:
+                        folder = "moving_otc"
+                    else:
+                        folder = "moving_cto"
+                else:
+                    folder = "moving_otc"
+                        
+                if "-moving_start-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                elif "-moving_end-" in self.tags:
+                    if int(frame) > len(platform_images[folder]) and self.reverse == True:
+                        self.reverse = False
+                        self.frame = 2
+                        frame = str(len(platform_images[folder]))
+                        
+                    elif int(frame) > len(platform_images[folder]) and self.reverse == False:
+                        self.reverse = True
+                        self.frame = 1
+                        frame = str(len(platform_images[folder]))
+                      
+                temp = deepcopy(platform_images[folder][frame])
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+                
+            else:
+                temp = platform_images["moving_cto"]["1"]
+                size = min(self.width, self.height)
+                temp = pg.transform.scale(temp, [size, size])
+                surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
+                
+        elif self.type == 2: # Murder
+            pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)), border_radius = 5)
+            
+        elif self.type == 3: # Gray
+            # 5 is the non-scaled size of all these textures
+            center = deepcopy(platform_images["gray"]["center"])
+            corner = deepcopy(platform_images["gray"]["corner"])
+            edge = deepcopy(platform_images["gray"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [max(self.width-10, 1), max(self.height-10, 1)])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [max(self.width-10, 1), 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [max(self.height-10, 1), 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
+        elif self.type == 4: # Start Platform
+            # 5 is the non-scaled size of all these textures
+            center = deepcopy(platform_images["start"]["center"])
+            corner = deepcopy(platform_images["start"]["corner"])
+            edge = deepcopy(platform_images["start"]["edge"])
+            
+            # Drawing center
+            center = pg.transform.scale(center, [max(self.width-10, 1), max(self.height-10, 1)])
+            surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
+            
+            # Drawing edges
+            edge = pg.transform.scale(edge, [max(self.width-10, 1), 5])
+            surface.blit(edge, [self.location[0] + 5, self.location[1]])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
+            edge = pg.transform.scale(edge, [max(self.height-10, 1), 5])
+            edge = pg.transform.rotate(edge, -90)
+            surface.blit(edge, [self.location[0], self.location[1] + 5])
+            edge = pg.transform.rotate(edge, 180)
+            surface.blit(edge, [self.location[0] + self.width - 5, self.location[1] + 5])
+            
+            # Drawing Corners
+            surface.blit(corner, self.location)
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1]))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0] + self.width - 5, self.location[1] + self.height - 5))
+            corner = pg.transform.rotate(corner, -90)
+            surface.blit(corner, (self.location[0], self.location[1] + self.height - 5))
+            
+        elif self.type == 5: # End Platform
+            image = platform_images["end"]
+            image = pg.transform.scale(image, [self.width, self.height])
+            surface.blit(image, (self.location))
+         
     
 class Player:
     def __init__(self, location):
@@ -961,27 +1501,73 @@ class PowerUp:
         
         self.frame = 1
         
-    def draw(self):
-        if self.type == 0:
-            pg.draw.rect(screen.get_surface(), (255, 200, 200), (self.location, (self.width, self.height)))
-        elif self.type == 1:
-            pg.draw.rect(screen.get_surface(), (255, 100, 255), (self.location, (self.width, self.height)))
-        elif self.type == 2:
-            pg.draw.rect(screen.get_surface(), (240, 240, 240), (self.location, (self.width, self.height)))
-        elif self.type == 3:
+    def draw(self, surface = screen.get_surface(), hover = False):
+        global d_time
+        
+        try:
+            self.time = self.time
+            self.phase = self.phase
+        except AttributeError:
+            self.phase = randint(0, 100)
+            self.time = 0
+        
+        self.time += d_time
+        if not "-fog-" in self.tags:
+            self.frame += d_time*60
+            frame = str(int(self.frame))
+            
+        y_offset = 0
+        if hover == True:
+            y_offset = sin((1.5 * self.time) + self.phase) * 10
+            
+        if self.type == 0: # Pheonix feather
+            temp = deepcopy(power_images["jump-feather"])
+            temp = pg.transform.scale(temp, [self.width, self.height])
+            surface.blit(temp, (self.location[0], self.location[1] + y_offset))
+            
+        elif self.type == 1: # Dash Bolt
+            temp = deepcopy(power_images["dash-bolt"])
+            temp = pg.transform.scale(temp, [self.width, self.height])
+            surface.blit(temp, (self.location[0], self.location[1] + y_offset))
+            
+        elif self.type == 2: # Fog
+            if "-triggered-" in self.tags:
+                self.frame += d_time*60
+            
+            temp = deepcopy(power_images["fog"])
+            temp = pg.transform.scale(temp, [self.width, self.height])
+            temp.set_alpha(min(max(255 - int(2*self.frame), 0), 255))
+            surface.blit(temp, (self.location[0], self.location[1] + y_offset))
+            
+            
+        elif self.type == 3: # Refusal Zone
             temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
-            pg.draw.rect(temp, (240, 150, 150, 100), ([0, 0], (self.width, self.height)))
-            screen.get_surface().blit(temp, self.location)
-        elif self.type == 4:
+            pg.draw.rect(temp, (240, 150, 150, 50), ([0, 0], (self.width, self.height)), border_radius = 5)
+            surface.blit(temp, self.location)
+            
+            
+        elif self.type == 4: # Cam Trigger
             temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
-            pg.draw.rect(temp, (240, 240, 240, 100), ([0, 0], (self.width, self.height)))
-            screen.get_surface().blit(temp, self.location)
-        elif self.type == 5:
-            pg.draw.rect(screen.get_surface(), (255, 255, 200), (self.location, (self.width, self.height)))
-        elif self.type == 6:
-            temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
-            pg.draw.rect(temp, (255, 255, 100, 50), ([0, 0], (self.width, self.height)))
-            screen.get_surface().blit(temp, self.location)
+            pg.draw.rect(temp, (255, 255, 255, 50), ([0, 0], (self.width, self.height)), border_radius = 5)
+            surface.blit(temp, self.location)
+        
+        
+        elif self.type == 5: # Star
+            try:
+                temp = deepcopy(power_images["star_idle"][frame])
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+                
+            except KeyError:
+                self.frame = 1
+                frame = "1"
+                temp = deepcopy(power_images["star_idle"][frame])
+                temp = pg.transform.scale(temp, [self.width, self.height])
+                surface.blit(temp, self.location)
+        
+        elif self.type == 6: #Infographic
+            pass
+      
       
 platforms = []
 powerups = []
@@ -1425,15 +2011,13 @@ def main():
                 open_menu[item].draw()
         
         for powerup in powerups:
-            powerup.draw()
+            powerup.draw(hover = True)
             powerup.frame = 1
             if powerup.type == 0:
-                powerup.width = 41
-                powerup.height = 21
+                powerup.height = powerup.width * (21/41)
                 
             elif powerup.type == 1:
-                powerup.width = 30
-                powerup.height = 30
+                powerup.height = powerup.width
                 
             if powerup.type == 2:
                 if not "-fog-" in powerup.tags:

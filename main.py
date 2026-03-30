@@ -1214,8 +1214,8 @@ def menu(saveable = False):
             else:
                 music_channel.play(music[current_track][segment])
             last_played.insert(0, music[current_track][segment])
-            if len(last_played) > 3:
-                last_played = last_played[0:2]
+            if len(last_played) > 2:
+                last_played = last_played[0:1]
             current_segment = segment
         
     if game_start == True:
@@ -2110,6 +2110,11 @@ class Player:
                             self.location[0] -= (entity.width/2 + self.width/2) - abs(x_diff)
                         else:
                             self.location[0] += (entity.width/2 + self.width/2 ) - abs(x_diff)
+                            
+                        if entity.delay > 0:
+                            if entity.location[1] < self.centre[1] < entity.location[1] + entity.height:
+                                entity.delay -= d_time
+                                entity.delay = max(entity.delay, 0)
 
                     else:
                         if y_diff < 0:
@@ -3442,8 +3447,8 @@ def main():
             else:
                 music_channel.play(music[current_track][segment])
             last_played.insert(0, music[current_track][segment])
-            if len(last_played) > 3:
-                last_played = last_played[0:2]
+            if len(last_played) > 2:
+                last_played = last_played[0:1]
             current_segment = segment
         
 
