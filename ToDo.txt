@@ -1,7 +1,5 @@
 
 Game Mechanics
-    -Add stars to menu background
-    -Make powerups hover up and down
 
 
 GUI
@@ -21,21 +19,19 @@ Levels
     Compactor - 12
     Use flow mult - Done - 13
     flow mult with more agency - 14
-    Acrobat - 15
+    Phoenix's Flight - 15
     Burst- 16
     Canned Lightning - 17
     Ghostly - 18
     Juggler - 19
-    ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 20
-    ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21
+    ['Dash Stacking', 'Unique Placement', 'Movement Refresh'] - 20 - Zeus' Might
+    ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21 - Catlike
     ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 22
     ['Flow Mult', 'Platform Cycling', 'Platforming', 'Unique Placement', 'Dash Stacking', 'Pogo'] - 23
     ['Unique Placement', 'Moving Platforms', 'Jump + Dash', 'Platforming', 'Death', 'Platform Cycling'] - 24
     ['Flow Mult', 'Movement Refresh', 'Multiple Jumps', 'Death', 'Pogo', 'Platform Cycling', 'Platforming'] - 25
 
 Art
-    texture jump
-    dash sound
 
 Misc
     -Get rid of magic numbers

@@ -8,6 +8,7 @@ sfx_volume:50.0
 
 Keybinds
 
+look up:w
 jump:w
 crouch:s
 left:a

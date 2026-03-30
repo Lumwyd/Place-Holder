@@ -1430,6 +1430,11 @@ def main():
             if powerup.type == 0:
                 powerup.width = 41
                 powerup.height = 21
+                
+            elif powerup.type == 1:
+                powerup.width = 30
+                powerup.height = 30
+                
             if powerup.type == 2:
                 if not "-fog-" in powerup.tags:
                     powerup.tags += "-fog-"
@@ -1479,10 +1484,7 @@ def main():
                 thing.platform_speed = [0, 0]
                 thing.direction = 1
                 thing.current_animation = "idle"
-            if isinstance(thing, PowerUp):
-                if thing.type == 0:
-                    thing.width = 41
-                    thing.height = 21
+            
             
             temp_dict[thing] = number
             

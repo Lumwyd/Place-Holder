@@ -309,7 +309,7 @@ def menu(saveable = False):
     title = font.render(title, True, (180, 200, 180))
     
     outer = (50, 100, 50)
-    inner = (50, 50, 100)
+    inner = (24, 33, 73)
     
     star_outer = (150, 120, 0)
     star_inner = (240, 240, 100)
@@ -363,7 +363,24 @@ def menu(saveable = False):
         if file.endswith(".sav"):
             save_count += 1
             saves.append(file)
+    
+    max_stars = 0
+    menu_stars = {}
+    
+    if opened_save == None and cont == False:
+        for save in saves:
+            save = open("saves\\"+save, "rb")
+            data = pickle.load(save)
+            save.close()
             
+            star_number = len(data[3].keys())
+            if star_number > max_stars:
+                max_stars = star_number
+                menu_stars = data[3]
+    
+    else:
+        menu_stars = level_stars
+    
     level_count = 0
     unsorted_levels = []
     for file in os.listdir("levels"):
@@ -438,6 +455,38 @@ def menu(saveable = False):
         screen.get_surface().blit(background, [0, 0])
         screen.get_surface().blit(title, ((0.5*screen_width)-(title.get_width()/2),(0.1*screen_height)-(title.get_height()/2)))
         changed_menu = False
+        
+        for star in menu_stars:
+            temp_star = deepcopy(power_images["star_idle"]["1"])
+            temp_star = pg.transform.scale(temp_star, [menu_stars[star]["size"], menu_stars[star]["size"]])
+            temp = pg.Surface([menu_stars[star]["size"], menu_stars[star]["size"]], pg.SRCALPHA)
+            temp.blit(temp_star)
+            temp = pg.transform.rotate(temp, menu_stars[star]["angle"])
+            
+            if menu_stars[star]["direction"] == 0: # Counter Clockwise
+                menu_stars[star]["angle"] -= menu_stars[star]["speed"] * d_time * 60
+                
+            elif menu_stars[star]["direction"] == 1: # Clockwise
+                menu_stars[star]["angle"] += menu_stars[star]["speed"] * d_time * 60
+                    
+            if menu_stars[star]["growth_phase"] == 0: # Shrinking
+                menu_stars[star]["size"] -= menu_stars[star]["speed"] * d_time / 7.5 * 10
+                
+                if menu_stars[star]["size"] <= 10:
+                    menu_stars[star]["size"] = 10
+                    menu_stars[star]["growth_phase"] = 1
+                
+            elif menu_stars[star]["growth_phase"] == 1: # Growing
+                menu_stars[star]["size"] += menu_stars[star]["speed"] * d_time / 7.5 * 10
+                
+                if menu_stars[star]["size"] >= 20:
+                    menu_stars[star]["size"] = 20
+                    menu_stars[star]["growth_phase"] = 0
+                    
+            draw_location = [menu_stars[star]["location"][0] - temp.get_width()/2, menu_stars[star]["location"][1] - temp.get_height()/2]                
+            
+            screen.get_surface().blit(temp, draw_location)
+        
         
         # allows scrolling for certain menus
         for event in pg.event.get(pg.MOUSEWHEEL):
@@ -594,6 +643,7 @@ def menu(saveable = False):
                             opened_save = item.removesuffix(".sav")
                             save = open("saves\\"+item, "rb")
                             load(save)
+                            save.close()
                             main()
                             
                         elif item in level_menu and not item == "back_tm":
@@ -625,6 +675,8 @@ def menu(saveable = False):
                             temp = font.render(str(level_number) + "-" + level_name, True, (180, 200, 180))
                             level_text = {}
                             level_text[temp] = [5, 5]
+                            
+                            save.close()
                             main()
                               
                         elif item == "save":
@@ -1211,15 +1263,15 @@ class Platform:
             edge = deepcopy(platform_images["white"]["edge"])
             
             # Drawing center
-            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            center = pg.transform.scale(center, [max(max(self.width-10, 1), 1), max(max(self.height-10, 1), 1)])
             surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
             
             # Drawing edges
-            edge = pg.transform.scale(edge, [self.width-10, 5])
+            edge = pg.transform.scale(edge, [max(max(self.width-10, 1), 1), 5])
             surface.blit(edge, [self.location[0] + 5, self.location[1]])
             edge = pg.transform.rotate(edge, 180)
             surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
-            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.scale(edge, [max(max(self.height-10, 1), 1), 5])
             edge = pg.transform.rotate(edge, -90)
             surface.blit(edge, [self.location[0], self.location[1] + 5])
             edge = pg.transform.rotate(edge, 180)
@@ -1242,15 +1294,15 @@ class Platform:
             edge = deepcopy(platform_images["moving"]["edge"])
             
             # Drawing center
-            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            center = pg.transform.scale(center, [max(self.width-10, 1), max(self.height-10, 1)])
             surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
             
             # Drawing edges
-            edge = pg.transform.scale(edge, [self.width-10, 5])
+            edge = pg.transform.scale(edge, [max(self.width-10, 1), 5])
             surface.blit(edge, [self.location[0] + 5, self.location[1]])
             edge = pg.transform.rotate(edge, 180)
             surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
-            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.scale(edge, [max(self.height-10, 1), 5])
             edge = pg.transform.rotate(edge, -90)
             surface.blit(edge, [self.location[0], self.location[1] + 5])
             edge = pg.transform.rotate(edge, 180)
@@ -1628,15 +1680,15 @@ class Platform:
             edge = deepcopy(platform_images["gray"]["edge"])
             
             # Drawing center
-            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            center = pg.transform.scale(center, [max(self.width-10, 1), max(self.height-10, 1)])
             surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
             
             # Drawing edges
-            edge = pg.transform.scale(edge, [self.width-10, 5])
+            edge = pg.transform.scale(edge, [max(self.width-10, 1), 5])
             surface.blit(edge, [self.location[0] + 5, self.location[1]])
             edge = pg.transform.rotate(edge, 180)
             surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
-            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.scale(edge, [max(self.height-10, 1), 5])
             edge = pg.transform.rotate(edge, -90)
             surface.blit(edge, [self.location[0], self.location[1] + 5])
             edge = pg.transform.rotate(edge, 180)
@@ -1658,15 +1710,15 @@ class Platform:
             edge = deepcopy(platform_images["start"]["edge"])
             
             # Drawing center
-            center = pg.transform.scale(center, [self.width-10, self.height-10])
+            center = pg.transform.scale(center, [max(self.width-10, 1), max(self.height-10, 1)])
             surface.blit(center, (self.location[0] + 5, self.location[1] + 5))
             
             # Drawing edges
-            edge = pg.transform.scale(edge, [self.width-10, 5])
+            edge = pg.transform.scale(edge, [max(self.width-10, 1), 5])
             surface.blit(edge, [self.location[0] + 5, self.location[1]])
             edge = pg.transform.rotate(edge, 180)
             surface.blit(edge, [self.location[0] + 5, self.location[1] + self.height - 5])
-            edge = pg.transform.scale(edge, [self.height-10, 5])
+            edge = pg.transform.scale(edge, [max(self.height-10, 1), 5])
             edge = pg.transform.rotate(edge, -90)
             surface.blit(edge, [self.location[0], self.location[1] + 5])
             edge = pg.transform.rotate(edge, 180)
@@ -1916,10 +1968,8 @@ class Player:
             self.crouched = True
             self.dash_timer += d_time
         else:
-            if self.speed[1] <= 0 and self.platform_speed == [0, 0]:
+            if not "-no_collide-" in self.tags:
                 self.speed[1] += 0.1*d_time*60
-            else:
-                self.speed[1] += 0.15*d_time*60
             
         if self.dash_timer >= 0.17:
             self.crouched = True
@@ -2014,7 +2064,27 @@ class Player:
         if self.cayote_timer >= 0.204:
             self.on_ground = False
             self.cayote_timer = 0
+        
+        if self.crouched == True:
+            if self.height == 55:
+                if self.on_ground or self.dash_timer != -1:
+                    self.location[1] += 15
+                
+                else:
+                    self.location[1] += 7.5
+                
+                self.height = 40
+        elif self.height == 40:
+            if self.on_ground or self.dash_timer != -1:
+                self.location[1] -= 15
             
+            else:
+                self.location[1] -= 7.5
+                
+            self.height = 55
+        else:
+            self.height = 55
+                
         
         Top_collide = False
         Bottom_collide = False
@@ -2101,6 +2171,7 @@ class Player:
                         self.cayote_timer = 0
                         powerups.remove(entity)
                         self.dashes = self.max_dashes 
+                        
                     elif entity.type == 1: #Dash Crystal
                         if self.jump_enabled:
                             self.jump_allowed = True
@@ -2109,10 +2180,11 @@ class Player:
                         self.max_dashes += 1
                         self.dashes = self.max_dashes  
                         powerups.remove(entity)   
+                        
                     elif entity.type == 5: # Stars
                         stars[level_number] = True  
                         powerups.remove(entity) 
-                        other_sounds["star_collect"].set_volume(master_volume*music_volume/100)
+                        other_sounds["star_collect"].set_volume(master_volume*sfx_volume/100)
                         other_sounds["star_collect"].play()
                         # of the form: location, size, rotation 
                         star_data = {"location":[randint(60, 1250), randint(60, 690)],
@@ -2191,26 +2263,6 @@ class Player:
         else:
             self.jump_allowed = False
         
-        if self.crouched == True:
-            if self.height == 55:
-                if self.on_ground or self.dash_timer != -1:
-                    self.location[1] += 15
-                
-                else:
-                    self.location[1] += 7.5
-                
-                self.height = 40
-        elif self.height == 40:
-            if self.on_ground or self.dash_timer != -1:
-                self.location[1] -= 15
-            
-            else:
-                self.location[1] -= 7.5
-                
-            self.height = 55
-        else:
-            self.height = 55
-            
         if self.dead:
             self.height = 30
             self.width = 55
@@ -2225,6 +2277,15 @@ class Player:
             else:
                 self.frame = 1
             
+    def jump(player):
+        if player.jump_enabled and player.jump_allowed:
+            player.speed[1] = min(player.speed[1], 0)
+            player.speed[1] -= 4
+            player.jump_allowed = False
+            player.on_ground = False
+            player.air_jump = False
+            player.cayote_timer = 0        
+    
         
 class PowerUp: 
     def __init__(self, location, type):
@@ -2241,21 +2302,34 @@ class PowerUp:
         self.frame = 0
         
         
-    def draw(self, surface = screen.get_surface()):
+    def draw(self, surface = screen.get_surface(), hover = False):
         global d_time
+        
+        try:
+            self.time = self.time
+            self.phase = self.phase
+        except AttributeError:
+            self.phase = randint(0, 100)
+            self.time = 0
+        
+        self.time += d_time
         if not "-fog-" in self.tags:
             self.frame += d_time*60
             frame = str(int(self.frame))
             
+        y_offset = 0
+        if hover == True:
+            y_offset = sin((1.5 * self.time) + self.phase) * 10
+            
         if self.type == 0: # Pheonix feather
             temp = deepcopy(power_images["jump-feather"])
             temp = pg.transform.scale(temp, [self.width, self.height])
-            surface.blit(temp, self.location)
+            surface.blit(temp, (self.location[0], self.location[1] + y_offset))
             
         elif self.type == 1: # Dash Bolt
             temp = deepcopy(power_images["dash-bolt"])
             temp = pg.transform.scale(temp, [self.width, self.height])
-            surface.blit(temp, self.location)
+            surface.blit(temp, (self.location[0], self.location[1] + y_offset))
             
         elif self.type == 2: # Fog
             if "-triggered-" in self.tags:
@@ -2264,7 +2338,7 @@ class PowerUp:
             temp = deepcopy(power_images["fog"])
             temp = pg.transform.scale(temp, [self.width, self.height])
             temp.set_alpha(min(max(255 - int(2*self.frame), 0), 255))
-            surface.blit(temp, self.location)
+            surface.blit(temp, (self.location[0], self.location[1] + y_offset))
             
             
         elif self.type == 3: # Refusal Zone
@@ -2282,6 +2356,7 @@ class PowerUp:
                 temp = deepcopy(power_images["star_idle"][frame])
                 temp = pg.transform.scale(temp, [self.width, self.height])
                 surface.blit(temp, self.location)
+                
             except KeyError:
                 self.frame = 1
                 frame = "1"
@@ -2294,13 +2369,14 @@ class PowerUp:
                 try:
                     temp = deepcopy(other_images["flow cycle"][frame])
                     temp = pg.transform.scale(temp, [self.width, self.height])
-                    surface.blit(temp, self.location)
+                    surface.blit(temp, (self.location[0], self.location[1] + y_offset))
+                    
                 except KeyError:
                     self.frame = 1
                     frame = "1"
                     temp = deepcopy(other_images["flow cycle"][frame])
-                    temp = pg.transform.scale(temp, [self.width, self.height])
-                surface.blit(temp, self.location)
+                    temp = pg.transform.scale(temp, [self.width, self.height])                
+                    surface.blit(temp, (self.location[0], self.location[1] + y_offset))
         
     def update(self):
         global player
@@ -2352,6 +2428,10 @@ last_played.insert(0, music[current_track][segment])
 global animation
 animation = False
 
+global tooltips
+tooltips = {1: key_names["jump"].title() + " to Jump, " +  key_names["left"].title()+ " to move Left," + key_names["crouch"].title() + " to Crouch, " + key_names["right"].title() + " to move Right",
+                2: key_names["dash"].title()+ " to Dash"}
+
 def star_collect_animation(star:PowerUp, star_data):
     global animation
     global power_images
@@ -2392,7 +2472,8 @@ def star_collect_animation(star:PowerUp, star_data):
                         previous_time = current_time
       
         
-        temp_surface.fill((25, 25, 75, 255))
+        background = pg.transform.scale(other_images["background"],[1280, 720])
+        temp_surface.blit(background)
         
         for sky_star in level_stars:
             temp_star = deepcopy(power_images["star_idle"]["1"])
@@ -2423,14 +2504,14 @@ def star_collect_animation(star:PowerUp, star_data):
         fade_alpha = min(fade_alpha, 100)
         temp_surface.blit(fade)
         
-        if player != []:
-            player.draw(temp_surface)  
+        player.draw(temp_surface)  
         
         if destination == [0, 0]: # Start of animation
             destination = [truncate(player.location[0]+(0.5*player.width)-(star.width/2)), truncate(player.location[1]-star.height)]
             x_diff = truncate(star.location[0] - destination[0], 3)
             y_diff = truncate(star.location[1] - destination[1], 3)
             time_taken = 1
+            player.current_animation = "fall"
             
         elif [round(star.location[0]), round(star.location[1])] == destination and time_taken >= framerate*2 and ap == False:
             # If star is above head
@@ -2439,8 +2520,9 @@ def star_collect_animation(star:PowerUp, star_data):
             y_diff = star.location[1] - destination[1]
             trail = True
             ap = True
-            other_sounds["star_beam"].set_volume(master_volume*music_volume/100)
+            other_sounds["star_beam"].set_volume(master_volume*sfx_volume/100)
             other_sounds["star_beam"].play()
+            player.current_animation = "idle"
             
         elif [round(star.location[0]), round(star.location[1])] == destination and  not time_taken >= framerate*2:
             #making it pause above head
@@ -2454,6 +2536,9 @@ def star_collect_animation(star:PowerUp, star_data):
             star.height = star.width
             oob = True
             
+            other_sounds["star_wee"].set_volume(master_volume*sfx_volume/100)
+            other_sounds["star_wee"].play()
+            
         elif [round(star.location[0]), round(star.location[1])] == destination and oob == True and explode == False:
             destination = star_data["location"]   
             x_diff = 0
@@ -2463,8 +2548,9 @@ def star_collect_animation(star:PowerUp, star_data):
             explode = True
             frame = 1
             
-            other_sounds["star_burst"].set_volume(master_volume*music_volume/100)
-            other_sounds["star_burst"].play()
+            other_sounds["star_wee"].fadeout(10)
+            other_sounds["star_burst"].set_volume(master_volume*sfx_volume/100)
+            other_sounds["star_burst"].play(fade_ms=5)
             
         elif [round(star.location[0]), round(star.location[1])] == destination and explode == True:
             #making it stop at destination
@@ -2549,11 +2635,10 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
     
     global Compactor
     
-    selected_object = None
-    direction = [0, 0]
+    global tooltips
     
-    held_keys = {}
-    frame = 0
+    global selected_object
+    selected_object = None
     
     animation = True
     skip = True
@@ -2614,96 +2699,9 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
             
             if event.type == pg.QUIT:
                 sys.exit(0)
-            if event.type == pg.MOUSEBUTTONDOWN:
-                entity_list = platforms + powerups
-                if player != []:
-                    entity_list += [player]
-                for thing in entity_list:
-                    temp_rect = pg.Rect(thing.location, [thing.width, thing.height])
-                    
-                    if temp_rect.collidepoint(mouse_position):
-                        for item in allowed_objects:
-                            if item.id == thing.id:
-                                
-                                selected_object = thing
-                                selected_object.tags += "-no_collide-"
-                                selected_offset = [mouse_position[0] - selected_object.location[0], mouse_position[1] - selected_object.location[1]]
-                            
-                                break
                 
-                if selected_object == None:
-                    start_x = 20
-                    i = 0
-                    for image in allowed_images:
-                        center = image.get_height()/2
-                        image_rect = pg.Rect([start_x + (100 * i), 50 - center], [80, 80])
-                        
-                        if image_rect.collidepoint(mouse_position) and allowed_objects[allowed_images[image]] > 0:
-                            selected_object = deepcopy(allowed_images[image])
-                            allowed_objects[allowed_images[image]] -= 1
-                            selected_object.tags += "-no_collide-"
-                            if isinstance(allowed_images[image], Player) and player == []:
-                                player.append(selected_object)
-                                player = player[0]
-                            
-                            elif isinstance(allowed_images[image], Platform):
-                                platforms.append(selected_object)
-                            
-                            elif isinstance(allowed_images[image], PowerUp):
-                                powerups.append(selected_object)
-                                
-                        
-                        i += 1
-                
-                  
-            if event.type == pg.MOUSEBUTTONUP:
-                if pg.mouse.get_just_released()[0]:
-                    start_x = 20
-                    i = 0
-                    for image in allowed_images:
-                        center = image.get_height()/2
-                        image_rect = pg.Rect([start_x + (100 * i), 50 - center], [80, 80])
-                        
-                        if image_rect.collidepoint(mouse_position) and selected_object != None:
-                            if allowed_images[image].id == selected_object.id:
-                                allowed_objects[allowed_images[image]] += 1
-                                
-                                if isinstance(selected_object, Player):
-                                    player = []
-                                elif isinstance(selected_object, Platform):
-                                    if selected_object in platforms:
-                                        platforms.remove(selected_object)
-                                elif isinstance(selected_object, PowerUp):
-                                    if selected_object in powerups:
-                                        powerups.remove(selected_object)
-                
-                        i += 1
-                    
-                    for power_up in powerups:
-                        if power_up.type == 3 and selected_object != None:
-                            selected_rect = pg.Rect(selected_object.location, [selected_object.width, selected_object.height])
-                            illegal_rect = pg.Rect(power_up.location, [power_up.width, power_up.height])
-                            
-                            if selected_rect.colliderect(illegal_rect):
-                                for image in allowed_images:
-                                    
-                                    if allowed_images[image].id == selected_object.id:
-                                        allowed_objects[allowed_images[image]] += 1
-                                        
-                                        if isinstance(selected_object, Player):
-                                            player = []
-                                        elif isinstance(selected_object, Platform):
-                                            if selected_object in platforms:
-                                                platforms.remove(selected_object)
-                                        elif isinstance(selected_object, PowerUp):
-                                            if selected_object in powerups:
-                                                powerups.remove(selected_object)
-                
-                if selected_object != None:
-                    selected_object.tags = selected_object.tags.replace("-no_collide-", "")
-                selected_object = None
-        
-        animation_surface.fill((25, 25, 75, 255))
+        background = pg.transform.scale(other_images["background"],[1280, 720])
+        animation_surface.blit(background)
         iris_surface.fill((0, 0, 0, 255))
             
         if shrink == True:
@@ -2769,6 +2767,12 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                 if size >= 640:
                     player.update(platforms + powerups, 1/framerate) 
                 location = [player.location[0] + (0.5*player.width), player.location[1] + (0.5*player.height)]
+                
+            if level_number in list(tooltips.keys()):
+                font = pg.font.SysFont("Comic Sans", 30)
+                text = tooltips[level_number]
+                temp = font.render(text, True, (180, 200, 180))
+                animation_surface.blit(temp, [(0.5*1280) - (temp.get_width()/2), (0.25*720) - (temp.get_height()/2)])
                 
             pg.draw.circle(iris_surface, (0, 0, 0, 0), location, size)
             size += 21*60/framerate
@@ -2858,8 +2862,6 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                         player = player[0]
                     break
             
-    if direction == [0, 0] and player != []:
-        player.speed[0] = 0
     previous_time = time.time()
     animation = False
  
@@ -2921,6 +2923,9 @@ def main():
     vignette_alpha = 0
     music_dim = 1
     
+    global tooltips  
+    
+    player_move_speed = 3
     
     while True:
         if Compactor:
@@ -2955,7 +2960,8 @@ def main():
         
         direction = [0, 0]
         frame += 1
-        pre_scaled.fill((25, 25, 75))
+        background = pg.transform.scale(other_images["background"],[1280, 720])
+        pre_scaled.blit(background, [0, 0])
         
         
             
@@ -3054,27 +3060,22 @@ def main():
         if  player != []:       
             if player.dead == False and not player == selected_object:
                 try:
-                    
-                    if pg.key.get_pressed()[key_bindings["jump"]]:
+                    if pg.key.get_pressed()[key_bindings["look up"]]:
                         direction[1] -= 1
-                    if pg.key.get_just_pressed()[key_bindings["jump"]]:
-                        if player.jump_enabled and player.jump_allowed:
-                            player.speed[1] = min(player.speed[1], 0)
-                            player.speed[1] -= 4
-                            player.jump_allowed = False
-                            player.on_ground = False
-                            player.air_jump = False
-                            player.cayote_timer = 0
+                        
                 except TypeError:
-                    if pg.mouse.get_pressed()[int(key_bindings["jump"][-1])]:
+                    if pg.mouse.get_pressed()[int(key_bindings["look up"][-1])]:
                         direction[1] -= 1
+                        
+                try:
+                    if pg.key.get_just_pressed()[key_bindings["jump"]]:
+                        player.jump()
+                            
+                except TypeError:
+                    
                     if pg.mouse.get_just_pressed()[int(key_bindings["jump"][-1])]:
-                        if player.jump_enabled and player.jump_allowed:
-                            player.speed[1] = min(player.speed[1], 0)
-                            player.speed[1] -= 4
-                            player.jump_allowed = False
-                            player.on_ground = False
-                            player.cayote_timer = 0
+                        player.jump()
+                        
                 try:
                     
                     if pg.key.get_pressed()[key_bindings["crouch"]]:
@@ -3090,6 +3091,11 @@ def main():
                     else:
                         player.crouched = False
                 
+                if player.crouched:
+                    player_move_speed = 1
+                else:
+                    player_move_speed = 3
+                
                 try:
                     if pg.key.get_pressed()[key_bindings["left"]]:
                         if direction[0] == 1:
@@ -3102,10 +3108,10 @@ def main():
                             if held_keys[key_bindings["left"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = -3
+                                player.speed[0] = -player_move_speed
                                 
                         except KeyError:
-                            player.speed[0] = -3
+                            player.speed[0] = -player_move_speed
                         
                         held_keys[key_bindings["left"]] = frame
                 except TypeError:
@@ -3120,10 +3126,10 @@ def main():
                             if held_keys[key_bindings["left"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = -3
+                                player.speed[0] = -player_move_speed
                                 
                         except KeyError:
-                            player.speed[0] = -3
+                            player.speed[0] = -player_move_speed
                         
                         held_keys[key_bindings["left"]] = frame
                                             
@@ -3141,10 +3147,10 @@ def main():
                             if held_keys[key_bindings["right"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = 3
+                                player.speed[0] = player_move_speed
                                 
                         except KeyError:
-                            player.speed[0] = 3
+                            player.speed[0] = player_move_speed
                         
                         held_keys[key_bindings["right"]] = frame
                 except TypeError:
@@ -3159,10 +3165,10 @@ def main():
                             if held_keys[key_bindings["right"]] == frame - 1:
                                 player.speed[0] *= 1.0001
                             else:
-                                player.speed[0] = 3
+                                player.speed[0] = player_move_speed
                                 
                         except KeyError:
-                            player.speed[0] = 3
+                            player.speed[0] = player_move_speed
                         
                         held_keys[key_bindings["right"]] = frame
                 if direction[0] == 0:
@@ -3181,6 +3187,9 @@ def main():
                             
                             player.dash_speed[0] += 10*direction[0]
                             player.dash_speed[1] += 10*direction[1]
+                            player_sounds["dash"].set_volume(master_volume*sfx_volume/100)
+                            player_sounds["dash"].play()
+                            
                 except TypeError:
                     if pg.mouse.get_pressed()[int(key_bindings["dash"][-1])]:
                         if player.dashes > 0 and vector_magnitude(direction) > 0 and player.dash_timer == -1:
@@ -3194,7 +3203,8 @@ def main():
                             
                             player.dash_speed[0] += 10*direction[0]
                             player.dash_speed[1] += 10*direction[1]
-                            
+                            player_sounds["dash"].set_volume(master_volume*sfx_volume/100)
+                            player_sounds["dash"].play()
             
             if player.dead == True:
                 level_text = {}
@@ -3272,14 +3282,14 @@ def main():
             if player != []:
                 if not "-no_collide-" in player.tags:
                     if level_stars[star]["layer"] == 3:
-                        level_stars[star]["location"][0] += -(player.speed[0] + player.dash_speed[0])*d_time*12
-                        level_stars[star]["location"][1] += -(player.speed[1] + player.dash_speed[1])*d_time*12
-                    elif level_stars[star]["layer"] == 2:
                         level_stars[star]["location"][0] += -(player.speed[0] + player.dash_speed[0])*d_time*6
                         level_stars[star]["location"][1] += -(player.speed[1] + player.dash_speed[1])*d_time*6
-                    elif level_stars[star]["layer"] == 1:
+                    elif level_stars[star]["layer"] == 2:
                         level_stars[star]["location"][0] += -(player.speed[0] + player.dash_speed[0])*d_time*3
                         level_stars[star]["location"][1] += -(player.speed[1] + player.dash_speed[1])*d_time*3
+                    elif level_stars[star]["layer"] == 1:
+                        level_stars[star]["location"][0] += -(player.speed[0] + player.dash_speed[0])*d_time*1.5
+                        level_stars[star]["location"][1] += -(player.speed[1] + player.dash_speed[1])*d_time*1.5
                         
                 if level_stars[star]["location"][0] < 0:
                     level_stars[star]["location"][0] = pre_scaled.width
@@ -3305,10 +3315,11 @@ def main():
               
         if player != []:
             player.update(platforms+powerups, d_time)
-            player.draw(pre_scaled)
             
             if just_finished_animation:
                 continue
+            
+            player.draw(pre_scaled)
             
             if player.flow_mult > 0:
                 flow_ratio = ((player.flow_mult-1)/5)*100
@@ -3357,7 +3368,7 @@ def main():
         
         
         for power in powerups:
-            power.draw(pre_scaled)
+            power.draw(pre_scaled, hover = True)
             power.update()
             
         
@@ -3380,6 +3391,12 @@ def main():
                 
         for i in to_remove:
             level_text.pop(i)
+            
+        if level_number in list(tooltips.keys()):
+            font = pg.font.SysFont("Comic Sans", 30)
+            text = tooltips[level_number]
+            temp = font.render(text, True, (180, 200, 180))
+            pre_scaled.blit(temp, [(0.5*1280) - (temp.get_width()/2), (0.25*720) - (temp.get_height()/2)])
             
         
         # Scaling to actual display
