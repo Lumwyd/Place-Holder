@@ -1427,6 +1427,9 @@ def main():
         for powerup in powerups:
             powerup.draw()
             powerup.frame = 1
+            if powerup.type == 0:
+                powerup.width = 41
+                powerup.height = 21
             if powerup.type == 2:
                 if not "-fog-" in powerup.tags:
                     powerup.tags += "-fog-"
@@ -1452,6 +1455,8 @@ def main():
             play_er.frame = 1
             play_er.air_jump = False
             play_er.platform_speed = [0, 0]
+            play_er.direction = 1
+            play_er.current_animation = "idle"
         
         temp_dict = {}
         to_remove = []
@@ -1459,6 +1464,7 @@ def main():
             to_remove.append(thing)
             number = allowed_objects[thing]
             thing.frame = 1
+            
             if isinstance(thing, Platform):
                 thing.reverse = False
                 try:
@@ -1471,6 +1477,13 @@ def main():
                     thing.delay = 0
             if isinstance(thing, Player):
                 thing.platform_speed = [0, 0]
+                thing.direction = 1
+                thing.current_animation = "idle"
+            if isinstance(thing, PowerUp):
+                if thing.type == 0:
+                    thing.width = 41
+                    thing.height = 21
+            
             temp_dict[thing] = number
             
         for thing in to_remove:

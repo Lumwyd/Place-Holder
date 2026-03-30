@@ -1,6 +1,7 @@
 
 Game Mechanics
     -Add stars to menu background
+    -Make powerups hover up and down
 
 
 GUI
@@ -33,12 +34,8 @@ Levels
     ['Flow Mult', 'Movement Refresh', 'Multiple Jumps', 'Death', 'Pogo', 'Platform Cycling', 'Platforming'] - 25
 
 Art
-    Texture Player
-        -Crouch
-        -Jump
-        -Idle
-        -Dash
-
-    texture powerups
+    texture jump
+    dash sound
 
 Misc
+    -Get rid of magic numbers

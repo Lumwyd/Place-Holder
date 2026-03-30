@@ -175,7 +175,7 @@ for image in os.walk("assets\\images"):
                         except KeyError:
                             other_images[root] = {}
                             other_images[root][frame.removesuffix(".png")] = pg.image.load("assets\\images\\"+root+"\\"+frame)
-                
+             
 other_sounds = {}
 player_sounds = {}
 platform_sounds = {}
@@ -1168,6 +1168,17 @@ def menu(saveable = False):
         
     if game_start == True:
         main()
+  
+warn("Put this into C_lib")
+def sign(x):
+    if x < 0:
+        return -1
+    
+    elif x > 0:
+        return 1
+    
+    else:
+        return 0
         
 class Platform:
     def __init__(self, location, width, height, type = 0):
@@ -1608,7 +1619,7 @@ class Platform:
                 surface.blit(temp, [self.centre[0] - size/2, self.centre[1] - size/2])
                 
         elif self.type == 2: # Murder
-            pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)))
+            pg.draw.rect(surface, (150, 0, 0), (self.location, (self.width, self.height)), border_radius = 5)
             
         elif self.type == 3: # Gray
             # 5 is the non-scaled size of all these textures
@@ -1794,13 +1805,85 @@ class Player:
         self.offset = [0, 0]
         self.start = [self.location[0], self.location[1]]
         self.frame = 0
+        self.direction = 1
+        self.current_animation = None
         
         self.platform_speed = [0, 0]
         
         self.air_jump = False
         
     def draw(self, surface = screen.get_surface()):
-        pg.draw.rect(surface, (220, 255, 220), (self.location, (self.width, self.height)))
+        global framerate
+        
+        self.frame += d_time*90
+        frame = str(int(self.frame))        
+        
+        if int(frame) > len(player_images[self.current_animation]):
+            self.frame = len(player_images[self.current_animation])
+            frame = str(self.frame)
+        
+        image = deepcopy(player_images[self.current_animation][frame])
+        
+        if "turn" in self.current_animation:
+            if self.direction == 1:
+                image = pg.transform.flip(image, True, False)
+                
+        elif self.direction == -1:
+            image = pg.transform.flip(image, True, False)
+        
+        if "crouch" in self.current_animation and self.crouched:
+            if self.on_ground or self.dash_timer != -1:
+                surface.blit(image, [self.location[0], self.location[1] - 15])
+            else:
+                surface.blit(image, [self.location[0], self.location[1] - 7.5])
+        else:
+            surface.blit(image, self.location)
+            
+        if self.dash_timer != -1:
+            frame = str(max(int(self.dash_timer*(framerate*2)), 1))
+            if int(frame) > len(player_images["dash_trail"]):
+                frame = str(len(player_images["dash_trail"]))
+                
+            image = player_images["dash_trail"][frame]
+            dash_direction = [sign(self.dash_speed[0]), sign(self.dash_speed[1])]
+            diagonal_correction = 4 # When dash trail is diagonal there's a gap between it and the player. For some reason that gap is 4X4
+            
+            if dash_direction == [1, 0]:
+                draw_location = [self.location[0] - image.get_width(), self.location[1] + (self.height/2) - (image.get_height()/2)]
+                
+            elif dash_direction == [1, 1]:
+                image = pg.transform.rotate(image, -45)
+                draw_location = [self.location[0] - image.get_width() + diagonal_correction, self.location[1]  - (image.get_width()) + diagonal_correction]
+            
+            elif dash_direction == [0, 1]:
+                image = pg.transform.rotate(image, -90)
+                draw_location = [self.location[0] + (self.width/2) - (image.get_width()/2), self.location[1] - image.get_height()]
+            
+            elif dash_direction == [-1, 1]:
+                image = pg.transform.rotate(image, -135)
+                draw_location = [self.location[0] + self.width - diagonal_correction, self.location[1] - image.get_height() + diagonal_correction]
+                
+            elif dash_direction == [-1, 0]:
+                image = pg.transform.rotate(image, 180)
+                draw_location = [self.location[0] + self.width, self.location[1] + (self.height/2) - (image.get_height()/2)]
+            
+            elif dash_direction == [-1, -1]:
+                image = pg.transform.rotate(image, -225)
+                draw_location = [self.location[0] + self.width - diagonal_correction, self.location[1] + self.height - diagonal_correction]
+            
+            elif dash_direction == [0, -1]:
+                image = pg.transform.rotate(image, -270)
+                draw_location = [self.location[0] + (self.width/2) - (image.get_width()/2), self.location[1] + self.height]
+            
+            elif dash_direction == [1, -1]:
+                image = pg.transform.rotate(image, -315)
+                draw_location = [self.location[0] - image.get_width() + diagonal_correction, self.location[1] + self.height - diagonal_correction]
+            
+            else:
+                draw_location = self.location
+                print(dash_direction)
+            surface.blit(image, draw_location)
+            
     
     def collide(self, entity):
         entity_rect = pg.Rect(entity.location[0], entity.location[1], entity.width, entity.height)
@@ -1826,14 +1909,14 @@ class Player:
         global music_channel
         
         self.cayote_timer += d_time
-        self.frame += d_time*60
-        
+        previous_animation = self.current_animation
+        fall_speed = self.speed[1] + self.dash_speed[1]
         
         if self.dash_timer >= 0:
             self.crouched = True
             self.dash_timer += d_time
         else:
-            if self.speed[1] <= 0 and self.platform_speed != [0, 0]:
+            if self.speed[1] <= 0 and self.platform_speed == [0, 0]:
                 self.speed[1] += 0.1*d_time*60
             else:
                 self.speed[1] += 0.15*d_time*60
@@ -1844,8 +1927,8 @@ class Player:
             if not "-no_collide-" in self.tags:
                 self.speed[1] += 0.1*d_time*60
                     
-            self.dash_speed[0] *= 0.8
-            self.dash_speed[1] *= 0.8
+            self.dash_speed[0] *= pow(0.8, d_time * 60)
+            self.dash_speed[1] *= pow(0.8, d_time * 60)
             self.dash_speed[0] = truncate(self.dash_speed[0], 1)
             self.dash_speed[1] = truncate(self.dash_speed[1], 1)
             
@@ -1855,11 +1938,54 @@ class Player:
         self.platform_speed[1] = min(self.platform_speed[1], 0)
         
         flow_speed = [self.speed[0] + self.dash_speed[0], min(self.speed[1], 0) + self.dash_speed[1]]
+        
         if self.on_ground == False and not self.crouched:
             flow_speed[0] += self.platform_speed[0]
             flow_speed[1] += self.platform_speed[1]
+            
+        previous_direction = self.direction
+        if flow_speed[0] < 0:
+            self.direction = -1
+        elif flow_speed[0] > 0:
+            self.direction = 1
         
-        if (flow_speed[1] > 0 and abs(self.platform_speed[0]) == 0) :
+        if self.dead:
+            self.current_animation = "dead"
+            
+        elif not self.crouched and previous_animation == "crouch":
+            self.current_animation = "stand"
+            
+        elif fall_speed < 0 and not self.crouched:
+            self.current_animation = "jump"
+                
+        elif self.crouched and previous_direction != self.direction:
+            self.current_animation = "crouching_turn"
+        
+        elif previous_direction != self.direction and not self.crouched:
+            self.current_animation = "standing_turn"
+            
+        elif self.crouched:
+            self.current_animation = "crouch"
+        
+        elif fall_speed > 0 and not self.crouched:
+            self.current_animation = "fall"
+            
+        elif abs(flow_speed[0]) > 0:
+            self.current_animation = "run_start"
+        
+        elif flow_speed[0] == 0 and previous_animation == "run_start":
+            self.current_animation = "run_end"
+        
+        elif flow_speed[0] == 0 and previous_animation == "run_end":
+            self.current_animation = "idle"
+        
+        elif flow_speed[0] == 0 and previous_animation == "fall":
+            self.current_animation =  "land"
+        
+        elif flow_speed[0] == 0:
+            self.current_animation =  "idle"
+        
+        if (flow_speed[1] >= 0 and abs(self.platform_speed[0]) == 0) :
             self.platform_speed = [0, 0]
         
         if vector_magnitude(flow_speed) > 0:
@@ -2074,6 +2200,14 @@ class Player:
                     self.location[1] += 7.5
                 
                 self.height = 40
+        elif self.height == 40:
+            if self.on_ground or self.dash_timer != -1:
+                self.location[1] -= 15
+            
+            else:
+                self.location[1] -= 7.5
+                
+            self.height = 55
         else:
             self.height = 55
             
@@ -2081,7 +2215,17 @@ class Player:
             self.height = 30
             self.width = 55
             self.speed[0] = 0
- 
+
+        if int(self.frame) < len(player_images[previous_animation]):
+            self.current_animation = previous_animation
+        
+        if previous_animation != self.current_animation:
+            if previous_animation == "crouching_turn" and "crouch" == self.current_animation:
+                self.frame = 16
+            else:
+                self.frame = 1
+            
+        
 class PowerUp: 
     def __init__(self, location, type):
         self.location = location
@@ -2103,10 +2247,16 @@ class PowerUp:
             self.frame += d_time*60
             frame = str(int(self.frame))
             
-        if self.type == 0:
-            pg.draw.rect(surface, (255, 200, 200), (self.location, (self.width, self.height)))
-        elif self.type == 1:
-            pg.draw.rect(surface, (255, 100, 255), (self.location, (self.width, self.height)))
+        if self.type == 0: # Pheonix feather
+            temp = deepcopy(power_images["jump-feather"])
+            temp = pg.transform.scale(temp, [self.width, self.height])
+            surface.blit(temp, self.location)
+            
+        elif self.type == 1: # Dash Bolt
+            temp = deepcopy(power_images["dash-bolt"])
+            temp = pg.transform.scale(temp, [self.width, self.height])
+            surface.blit(temp, self.location)
+            
         elif self.type == 2: # Fog
             if "-triggered-" in self.tags:
                 self.frame += d_time*60
@@ -2119,7 +2269,7 @@ class PowerUp:
             
         elif self.type == 3: # Refusal Zone
             temp = pg.Surface([self.width, self.height], pg.SRCALPHA)
-            pg.draw.rect(temp, (240, 150, 150, 50), ([0, 0], (self.width, self.height)))
+            pg.draw.rect(temp, (240, 150, 150, 50), ([0, 0], (self.width, self.height)), border_radius = 5)
             surface.blit(temp, self.location)
             
             
@@ -2417,7 +2567,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
     
     allowed_images = {}
     for thing in allowed_objects:
-        temp_surface = pg.Surface([thing.width, thing.height])
+        temp_surface = pg.Surface([thing.width, thing.height], pg.SRCALPHA)
         thing.location = [0, 0]
         if allowed_objects[thing] == 0:
             temp_surface.fill((70, 70, 70))
@@ -2588,7 +2738,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                 
             allowed_images = {}
             for thing in allowed_objects:
-                temp_surface = pg.Surface([thing.width, thing.height])
+                temp_surface = pg.Surface([thing.width, thing.height], pg.SRCALPHA)
                 thing.location = [0, 0]
                 if allowed_objects[thing] == 0:
                     temp_surface.fill((70, 70, 70))
@@ -3154,8 +3304,8 @@ def main():
                 selected_object.start = [selected_object.location[0], selected_object.location[1]]
               
         if player != []:
-            player.draw(pre_scaled)
             player.update(platforms+powerups, d_time)
+            player.draw(pre_scaled)
             
             if just_finished_animation:
                 continue
@@ -3183,7 +3333,7 @@ def main():
         
         allowed_images = {}
         for thing in allowed_objects:
-            temp_surface = pg.Surface([thing.width, thing.height])
+            temp_surface = pg.Surface([thing.width, thing.height], pg.SRCALPHA)
             thing.location = [0, 0]
             if allowed_objects[thing] == 0:
                 temp_surface.fill((70, 70, 70))
