@@ -1,6 +1,6 @@
 fullscreen:1
 framerate:60
-resolution:1360X770
+resolution:1920X1080
 
 master_volume:100.0
 music_volume:50.0
@@ -8,12 +8,12 @@ sfx_volume:50.0
 
 Keybinds
 
-look up:w
-jump:w
+look up:space
+jump:space
 crouch:s
 left:a
 right:d
-dash:mouse_button-2
+dash:left shift
 
 reset:r
 menu:escape

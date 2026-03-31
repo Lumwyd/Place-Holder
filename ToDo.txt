@@ -25,11 +25,7 @@ Levels
     Ghostly - 18
     Juggler - 19
     Zeus' Might - 20
-    ['Movement Refresh', 'Multiple Jumps', 'Platforming', 'Moving Platforms'] - 21 - Catlike
-    ['Dash Stacking', 'Platforming', 'Movement Refresh', 'Multiple Jumps', 'Moving Platforms'] - 22
-    ['Flow Mult', 'Platform Cycling', 'Platforming', 'Unique Placement', 'Dash Stacking', 'Pogo'] - 23
-    ['Unique Placement', 'Moving Platforms', 'Jump + Dash', 'Platforming', 'Death', 'Platform Cycling'] - 24
-    ['Flow Mult', 'Movement Refresh', 'Multiple Jumps', 'Death', 'Pogo', 'Platform Cycling', 'Platforming'] - 25
+    
 
 Art
 

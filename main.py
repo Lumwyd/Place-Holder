@@ -304,7 +304,7 @@ def menu(saveable = False):
     
     global opened_save
     
-    title = "PlaceHolder"
+    title = "Place Holder"
     font = pg.font.SysFont("Comic Sans", 50)
     title = font.render(title, True, (180, 200, 180))
     
@@ -453,9 +453,8 @@ def menu(saveable = False):
         events = pg.event.get(pg.MOUSEBUTTONDOWN)
         background = pg.transform.scale(other_images["background"],[screen_width, screen_height])
         screen.get_surface().blit(background, [0, 0])
-        screen.get_surface().blit(title, ((0.5*screen_width)-(title.get_width()/2),(0.1*screen_height)-(title.get_height()/2)))
-        changed_menu = False
         
+        pre_scaled = pg.Surface([1280, 720], pg.SRCALPHA)
         for star in menu_stars:
             temp_star = deepcopy(power_images["star_idle"]["1"])
             temp_star = pg.transform.scale(temp_star, [menu_stars[star]["size"], menu_stars[star]["size"]])
@@ -485,8 +484,23 @@ def menu(saveable = False):
                     
             draw_location = [menu_stars[star]["location"][0] - temp.get_width()/2, menu_stars[star]["location"][1] - temp.get_height()/2]                
             
-            screen.get_surface().blit(temp, draw_location)
+            pre_scaled.blit(temp, draw_location)
         
+        # Scaling to actual display
+        ratio = min(screen_width/1280, screen_height/720)
+        
+        
+        scaled_width = int(1280 * ratio)
+        scaled_height = int(720 * ratio)
+        
+        pre_scaled = pg.transform.scale(pre_scaled, [scaled_width, scaled_height])
+        center = [screen_width//2, screen_height//2]
+        
+        screen.get_surface().blit(pre_scaled, [center[0] - scaled_width/2, center[1] - scaled_height/2])
+         
+        
+        screen.get_surface().blit(title, ((0.5*screen_width)-(title.get_width()/2),(0.1*screen_height)-(title.get_height()/2)))
+        changed_menu = False
         
         # allows scrolling for certain menus
         for event in pg.event.get(pg.MOUSEWHEEL):
@@ -693,6 +707,7 @@ def menu(saveable = False):
                             
                             held_keys = {}
                             while not done:
+                                mouse_position = pg.mouse.get_pos()
                                 clock.tick(framerate)
                                 text = font.render(save_name, True, (10, 10, 10))
                                 
@@ -720,7 +735,7 @@ def menu(saveable = False):
                                                    (0.5*screen_height) - (0.5*text.get_height())))
                                 pg.draw.rect(screen.get_surface(), outer, ((0.46*screen_width)-(info.get_width()/2),(0.64*screen_height)-(info.get_height()/2), info.get_width()*1.2, info.get_height()*1.2), border_radius=50)
                                 pg.draw.rect(screen.get_surface(), inner, ((0.47*screen_width)-(info.get_width()/2),(0.65*screen_height)-(info.get_height()/2), info.get_width()*1.15, info.get_height()*1.05), border_radius=50)
-                            
+                                                                            
                                 screen.get_surface().blit(info, ((0.5*screen_width) - (0.5*info.get_width()),
                                                    (0.6*screen_height) ))
                                 screen.flip() 
@@ -852,7 +867,21 @@ def menu(saveable = False):
                                             
                                     if event.key == key_bindings["menu"]:
                                         done = True
-                                        
+                                    
+                                if pg.mouse.get_pressed()[0] or pg.mouse.get_pressed()[2]:
+                                    collision_rect = pg.Rect((0.46*screen_width)-(info.get_width()/2),(0.64*screen_height)-(info.get_height()/2), info.get_width()*1.2, info.get_height()*1.2)
+                                    print("uhuh")
+                                    if collision_rect.collidepoint(mouse_position[0], mouse_position[1]):
+                                        if len(save_name) >=1:
+                                            save = open("saves\\"+save_name+".sav", "wb")
+                                            
+                                            data = [stars, level_number, max_level, level_stars]
+                                            
+                                            pickle.dump(data, save)
+                                            
+                                            save.close()
+                                                                                        
+                                            done = True    
                                                                                         
                         elif item == "back_om":
                             changed_menu = True
@@ -1221,17 +1250,6 @@ def menu(saveable = False):
     if game_start == True:
         main()
   
-warn("Put this into C_lib")
-def sign(x):
-    if x < 0:
-        return -1
-    
-    elif x > 0:
-        return 1
-    
-    else:
-        return 0
-        
 class Platform:
     def __init__(self, location, width, height, type = 0):
         self.location = location
@@ -2435,7 +2453,9 @@ animation = False
 
 global tooltips
 tooltips = {1: key_names["jump"].title() + " to Jump, " +  key_names["left"].title()+ " to move Left," + key_names["crouch"].title() + " to Crouch, " + key_names["right"].title() + " to move Right",
-                2: key_names["dash"].title()+ " to Dash"}
+            2: key_names["dash"].title()+ " to Dash",
+            21: "Thanks for playing! Hope you enjoyed!"}
+
 
 def star_collect_animation(star:PowerUp, star_data):
     global animation
@@ -2453,8 +2473,14 @@ def star_collect_animation(star:PowerUp, star_data):
     oob = False
     explode = False
     
+    current_time = time.time()
+    animation_time = current_time - previous_time
     
     while animation:
+        current_time = time.time()
+        d_time = current_time - previous_time
+        previous_time = current_time
+        
         temp_surface = pg.Surface([1280, 720], pg.SRCALPHA)
         fade = pg.Surface([1280, 720], pg.SRCALPHA)
         for event in pg.event.get():
@@ -2465,7 +2491,7 @@ def star_collect_animation(star:PowerUp, star_data):
                 if pg.key.get_just_pressed()[key_bindings["menu"]]:
                     menu(True)
                     current_time = time.time()
-                    d_time = 1/framerate
+                    d_time = current_time - previous_time
                     previous_time = current_time                
                         
             except TypeError:
@@ -2473,7 +2499,7 @@ def star_collect_animation(star:PowerUp, star_data):
                     if pg.mouse.get_just_pressed()[int(key_bindings["menu"][-1])]:
                         menu(True)
                         current_time = time.time()
-                        d_time = 1/framerate
+                        d_time = current_time - previous_time
                         previous_time = current_time
       
         
@@ -2505,7 +2531,7 @@ def star_collect_animation(star:PowerUp, star_data):
             
         
         fade.fill((0, 0, 0, fade_alpha))
-        fade_alpha += (4/framerate)*60
+        fade_alpha += 4*d_time*60
         fade_alpha = min(fade_alpha, 100)
         temp_surface.blit(fade)
         
@@ -2518,7 +2544,7 @@ def star_collect_animation(star:PowerUp, star_data):
             time_taken = 1
             player.current_animation = "fall"
             
-        elif [round(star.location[0]), round(star.location[1])] == destination and time_taken >= framerate*2 and ap == False:
+        elif star.location == destination and time_taken >= 3 and ap == False:
             # If star is above head
             destination[1] -= 720
             x_diff = star.location[0] - destination[0]
@@ -2529,27 +2555,29 @@ def star_collect_animation(star:PowerUp, star_data):
             other_sounds["star_beam"].play()
             player.current_animation = "idle"
             
-        elif [round(star.location[0]), round(star.location[1])] == destination and  not time_taken >= framerate*2:
+            
+        elif star.location == destination and  not time_taken >= 3:
             #making it pause above head
             x_diff = 0
             y_diff = 0   
             
-        elif [round(star.location[0]), round(star.location[1])] == destination and time_taken >= framerate*2 and ap == True and explode == False and oob == False:
+        elif star.location == destination and time_taken >= 3 and ap == True and explode == False and oob == False:
             destination = star_data["location"]   
-            x_diff = truncate(star.location[0] - destination[0], 3)
-            y_diff = truncate(star.location[1] - destination[1], 3)
+            x_diff = star.location[0] - destination[0]
+            y_diff = star.location[1] - destination[1]
             star.height = star.width
             oob = True
             
             other_sounds["star_wee"].set_volume(master_volume*sfx_volume/100)
             other_sounds["star_wee"].play()
             
-        elif [round(star.location[0]), round(star.location[1])] == destination and oob == True and explode == False:
+        elif star.location == destination and oob == True and explode == False:
             destination = star_data["location"]   
             x_diff = 0
             y_diff = 0
             star.height = star.width
             size_diff = star_data["size"] - star.height
+            growth_rate = size_diff/1.85
             explode = True
             frame = 1
             
@@ -2557,23 +2585,33 @@ def star_collect_animation(star:PowerUp, star_data):
             other_sounds["star_burst"].set_volume(master_volume*sfx_volume/100)
             other_sounds["star_burst"].play(fade_ms=5)
             
-        elif [round(star.location[0]), round(star.location[1])] == destination and explode == True:
+        elif star.location == destination and explode == True:
             #making it stop at destination
             x_diff = 0
             y_diff = 0   
         
         
         
-        star.location[0] -= x_diff/framerate
-        star.location[1] -= y_diff/framerate
+        next_x = star.location[0] - x_diff*d_time
+        next_y = star.location[1] - y_diff*d_time
+        
+        if abs(next_x - destination[0]) > abs(star.location[0] - destination[0]):
+            star.location[0] = destination[0]
+        else:
+            star.location[0] = next_x
+
+        if abs(next_y - destination[1]) > abs(star.location[1] - destination[1]):
+            star.location[1] = destination[1]
+        else:
+            star.location[1] = next_y
         
         star.draw(temp_surface)
         
         if time_taken >= 1:
-            time_taken += 1
+            time_taken += d_time
             
         if trail == True and ap == True and oob != True:
-            frame += (1/framerate) *60
+            frame += 1*d_time *60
             frame = max(1, frame)
             frame = int(frame)
             if frame % 5 == 0:
@@ -2590,7 +2628,7 @@ def star_collect_animation(star:PowerUp, star_data):
             temp_surface.blit(image, [star.location[0] , star.location[1] + star.height])
             
         if explode == True:
-            frame += (1/framerate) *60
+            frame += 1*d_time *60
             frame = max(1, frame)
             frame = int(frame)
             
@@ -2598,8 +2636,12 @@ def star_collect_animation(star:PowerUp, star_data):
                 image = power_images["star_burst"][str(frame)]
                 temp_surface.blit(image, [star.location[0] + (star.width/2)-(image.width/2), star.location[1] + (star.height/2) - (image.height/2)])
                 
-                star.width += size_diff/111
-                star.height += size_diff/111
+                star.width += growth_rate*d_time
+                if star.width >= star_data["size"]:
+                    star.width = star_data["size"]
+                star.height += growth_rate*d_time
+                if star.height >= star_data["size"]:
+                    star.height = star_data["size"]
                 
             except KeyError:
                 animation = False
@@ -2679,8 +2721,12 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
         animation_surface.blit(number, [start_x + (100 * i) + (80 - number.get_width()), (50 - center) + image.get_height()])
         i += 1
     
-    
+    previous_time = time.time()
     while animation:
+        current_time = time.time()
+        d_time = current_time - previous_time
+        previous_time = current_time
+        
         mouse_position =  list(pg.mouse.get_pos())
         animation_surface = pg.Surface([1280, 720], pg.SRCALPHA)
         iris_surface = pg.Surface([1280, 720], pg.SRCALPHA)
@@ -2714,7 +2760,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                 location = [player.location[0] + (0.5*player.width), player.location[1] + (0.5*player.height)]
             animation_surface.blit(pre_trans_surface)
             pg.draw.circle(iris_surface, (0, 0, 0, 0), location, size)
-            size -= 21*60/framerate
+            size -= 21*60*d_time
             size = max(size, 0)
             
         if grow == True:
@@ -2770,7 +2816,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
             if player != []:
                 player.draw(animation_surface) 
                 if size >= 640:
-                    player.update(platforms + powerups, 1/framerate) 
+                    player.update(platforms + powerups, d_time) 
                 location = [player.location[0] + (0.5*player.width), player.location[1] + (0.5*player.height)]
                 
             if level_number in list(tooltips.keys()):
@@ -2780,7 +2826,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
                 animation_surface.blit(temp, [(0.5*1280) - (temp.get_width()/2), (0.25*720) - (temp.get_height()/2)])
                 
             pg.draw.circle(iris_surface, (0, 0, 0, 0), location, size)
-            size += 21*60/framerate
+            size += 21*60*d_time
             size = min(size, 1280)
             
         animation_surface.blit(iris_surface)
@@ -2788,7 +2834,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
         if shrink == True and size == 0 and time_taken == 0:
             time_taken = 1
         
-        elif shrink == True and size == 0 and time_taken >= framerate:
+        elif shrink == True and size == 0 and time_taken >= 1.5:
             shrink = False
             grow  = True
             if level_number == 12:
@@ -2824,7 +2870,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
             animation = False
             
         if time_taken >= 1:
-            time_taken += 1
+            time_taken += d_time
             
         ratio = min(screen_width/1280, screen_height/720)
         
@@ -2870,6 +2916,7 @@ def stage_transition_animation(pre_trans_surface: pg.Surface):
     previous_time = time.time()
     animation = False
  
+
 def main(): 
     
     global Compactor
@@ -2924,14 +2971,16 @@ def main():
     level_text[temp] = [5, 5]
     
     cutout_size = [1280, 720]
-    vignette_strength = 250
+    vignette_strength = 75
     vignette_alpha = 0
     music_dim = 1
     
     global tooltips  
     
     player_move_speed = 3
+    background = pg.transform.scale(other_images["background"],[1280, 720]).convert()
     
+    allowed_images = {}
     while True:
         if Compactor:
             Compactor = False
@@ -2940,13 +2989,11 @@ def main():
                     platform.tags += "-moving_end-"
         just_finished_animation = False
         direction = [0, 0]
-        pre_scaled = pg.Surface([1280, 720])  
-        vignette = pg.Surface([1280, 720], pg.SRCALPHA) 
+        pre_scaled = pg.Surface([1280, 720], pg.SRCALPHA)
+        vignette = pg.Surface([1280, 720], pg.SRCALPHA)
         
            
         mouse_position = list(pg.mouse.get_pos())
-        # # mouse_position[0] *= 1.5
-        # # mouse_position[1] *= 1.5
         
         # # Scaling mouse position
         center = [(screen_width)//2, (screen_height)//2]
@@ -2963,13 +3010,10 @@ def main():
         mouse_position[1] /= truncate(ratio, 5)
         
         
-        direction = [0, 0]
         frame += 1
-        background = pg.transform.scale(other_images["background"],[1280, 720])
         pre_scaled.blit(background, [0, 0])
         
         
-            
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 sys.exit(0)
@@ -3061,7 +3105,7 @@ def main():
                 if selected_object != None:
                     selected_object.tags = selected_object.tags.replace("-no_collide-", "")
                 selected_object = None
-        
+
         if  player != []:       
             if player.dead == False and not player == selected_object:
                 try:
@@ -3255,6 +3299,7 @@ def main():
                     d_time = 1/framerate
                     previous_time = current_time
                 
+        
         for star in level_stars:
             temp_star = deepcopy(power_images["star_idle"]["1"])
             temp_star = pg.transform.scale(temp_star, [level_stars[star]["size"], level_stars[star]["size"]])
@@ -3309,7 +3354,6 @@ def main():
             
             pre_scaled.blit(temp, draw_location)
         
-                            
         if selected_object != None:
             selected_object.location = [mouse_position[0], mouse_position[1]]
             selected_object.location[0] -= selected_offset[0]
@@ -3337,12 +3381,9 @@ def main():
         
         vignette.fill((100, 255, 100, vignette_alpha))
         pg.draw.ellipse(vignette, (0, 0, 0, 0), [[640 - (cutout_size[0]/2), 360 - (cutout_size[1]/2)], cutout_size])
-        vignette = smooth_blur(vignette, vignette_strength/5)
-        vignette = smooth_blur(vignette, vignette_strength/5)
-        vignette = smooth_blur(vignette, vignette_strength/5)
-        vignette = smooth_blur(vignette, vignette_strength/5)
-        vignette = smooth_blur(vignette, vignette_strength/5)
-                    
+        vignette = smooth_blur(vignette, vignette_strength)
+        
+                   
         for platform in platforms:
             platform.draw(pre_scaled)
             platform.update()
@@ -3375,8 +3416,7 @@ def main():
         for power in powerups:
             power.draw(pre_scaled, hover = True)
             power.update()
-            
-        
+      
         pre_scaled.blit(vignette)
         
         to_remove = []
@@ -3414,10 +3454,9 @@ def main():
         center = [screen_width//2, screen_height//2]
         
         screen.get_surface().blit(pre_scaled, [center[0] - scaled_width/2, center[1] - scaled_height/2])
-            
+         
         screen.flip()
         clock.tick(framerate)
-        
         current_time = time.time()
         d_time = current_time - previous_time
         previous_time = current_time
@@ -3450,6 +3489,7 @@ def main():
             if len(last_played) > 2:
                 last_played = last_played[0:1]
             current_segment = segment
-        
+            
+
 
 menu(True)
